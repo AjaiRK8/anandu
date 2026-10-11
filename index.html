@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Video review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,6 +69,8 @@ button.small{padding:4px 9px;font-size:.82rem}
 #status{min-height:1.4em;margin:10px 0 0;font-size:.9rem;color:var(--ok)}
 #status.err{color:var(--bad)}
 .none{color:var(--muted);margin:0}
+@media (pointer:coarse){button{min-height:44px}button.small{min-height:40px;padding:6px 12px}.ts{min-height:36px;padding:4px 12px}.pills label{padding:9px 14px}}
+@media (max-width:600px){.wrap{padding:12px 10px 50px}.card{padding:12px}.list{max-height:none}.linkbar{flex-direction:column}.timerow input{max-width:none;flex:1}.sendbtns button{flex:1 1 45%}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -97,10 +99,10 @@ button.small{padding:4px 9px;font-size:.82rem}
       <div class="field">
         <label for="time">Time in video</label>
         <div class="timerow">
-          <input id="time" inputmode="numeric" placeholder="0:00" aria-describedby="timeHelp">
+          <input id="time" inputmode="text" autocomplete="off" placeholder="0:00" aria-describedby="timeHelp">
           <button type="button" id="nowBtn">Use current time</button>
         </div>
-        <p class="hint" id="timeHelp">Follows the video while you watch. Click the note box to pause and lock the time. You can type a time like 1:25.</p>
+        <p class="hint" id="timeHelp">Follows the video while you watch. Tap the note box to pause and lock the time. You can type a time like 1:25.</p>
       </div>
       <div class="field">
         <label id="catLabel">Type of change</label>
@@ -177,7 +179,7 @@ let dirty = false;
 /* ---------- helpers ---------- */
 const fmt = s => { s=Math.max(0,Math.floor(s)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
   return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0"); };
-const parseT = str => { if(!str) return null; const p=str.trim().split(":").map(Number);
+const parseT = str => { if(!str) return null; const p=str.trim().replace(/[.,;]/g,":").split(":").map(Number);
   if(p.some(n=>isNaN(n)||n<0)||p.length>3) return null;
   return p.reduce((a,n)=>a*60+n,0); };
 const say = (msg,err) => { const e=$("#status"); e.textContent=msg; e.className=err?"err":""; };
@@ -220,6 +222,7 @@ async function setVideo(url){
 
   const yt = ytId(url), vm = vimeoParts(url), dr = driveId(url);
   if(yt){
+    if(location.protocol==="file:") $("#playerHint").textContent = "Error 153? YouTube blocks players on files opened from your computer. It works once the site is on GitHub Pages, or run: python -m http.server, then open http://localhost:8000.";
     box.innerHTML = '<div id="ytbox"></div>';
     await loadYT();
     const p = new YT.Player("ytbox",{videoId:yt,playerVars:{rel:0,playsinline:1}});
