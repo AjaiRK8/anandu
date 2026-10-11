@@ -45,6 +45,11 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
       <p class="hint">YouTube and Vimeo give automatic timestamps. Dropbox and direct files do too. Drive, Instagram and others need the time typed.</p>
     </div>
     <div class="field">
+      <label for="editor">Edited by (your name)</label>
+      <input id="editor" type="text" placeholder="Your name or studio">
+      <p class="hint">Shown at the top of the review page. Remembered in this browser.</p>
+    </div>
+    <div class="field">
       <label for="project">Project name</label>
       <input id="project" type="text" placeholder="Anandu Wedding Teaser">
     </div>
@@ -73,7 +78,7 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 
 <script>
 const $=s=>document.querySelector(s);
-const ids=["base","video","project","client","version"];
+const ids=["base","video","editor","project","client","version"];
 const saved=(()=>{try{return localStorage.getItem("mk:base")||""}catch(e){return""}})();
 if(location.protocol.startsWith("http")){
   $("#base").value=location.href.replace(/make-link\.html.*$/,"");
@@ -81,6 +86,8 @@ if(location.protocol.startsWith("http")){
   $("#base").value=saved;
   $("#baseHint").textContent="Opened from your computer. Type your GitHub Pages address, for example https://USERNAME.github.io/review/";
 }
+
+try{ $("#editor").value = localStorage.getItem("mk:editor")||""; }catch(e){}
 
 function cleanVideo(u){
   u=u.trim();
@@ -94,7 +101,7 @@ function build(){
   if(!/\/$|\.html$/.test(base)) base+="/";
   const q=new URLSearchParams();
   q.set("video",v);
-  [["project","project"],["version","version"],["client","client"]].forEach(([id,k])=>{
+  [["editor","editor"],["project","project"],["version","version"],["client","client"]].forEach(([id,k])=>{
     const x=$("#"+id).value.trim(); if(x) q.set(k,x);
   });
   return base+"?"+q.toString();
@@ -103,6 +110,7 @@ function update(){
   const l=build();
   $("#out").textContent=l||"Fill in the video link and page address.";
   try{localStorage.setItem("mk:base",$("#base").value)}catch(e){}
+  try{localStorage.setItem("mk:editor",$("#editor").value)}catch(e){}
 }
 function say(m,e){const s=$("#st");s.textContent=m;s.className=e?"err":""}
 function need(){const l=build();if(!l){say("Add the video link and page address first.",true);return null}return l}
