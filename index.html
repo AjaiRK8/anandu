@@ -72,6 +72,435 @@ button.small{padding:4px 9px;font-size:.82rem}
 .none{color:var(--muted);margin:0}
 @media (pointer:coarse){button{min-height:44px}button.small{min-height:40px;padding:6px 12px}.ts{min-height:36px;padding:4px 12px}.pills label{padding:9px 14px}}
 @media (max-width:600px){.wrap{padding:12px 10px 50px}.card{padding:12px}.list{max-height:none}.linkbar{flex-direction:column}.timerow input{max-width:none;flex:1}.sendbtns button{flex:1 1 45%}}
+.cp{--ink:#0E1415;--surface:#151E20;--line:#263234;--signal:#4DB6C4;--tungsten:#E8B86D;--mist:#EDF2F2;--muted:#8C9B9D;--ease:cubic-bezier(.22,1,.36,1)}
+.player.ratio{aspect-ratio:var(--ratio,1.7778);max-height:76vh;max-height:76dvh;width:min(100%,calc(76vh*var(--ratio,1.7778)));width:min(100%,calc(76dvh*var(--ratio,1.7778)));margin:0 auto}
+.player .cp-video{object-fit:contain}
+.cp .cp-q,.cp .cp-hud,.cp .cp-confirm{display:none!important}
+/* ── Custom video player ───────────────────────────────────────────────
+   Only mounted for kind:'file' videos (self-hosted / Dropbox / OneDrive) —
+   iframe embeds (YouTube, Vimeo, Instagram, Drive…) keep their own player.
+   The .cp-video element itself is styled by the existing
+   ".modal-stage video" rule above (absolute, fills the box, object-fit:
+   cover) so it isn't redeclared here.
+   ────────────────────────────────────────────────────────────────────── */
+
+.player .cp {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  outline: none;
+  touch-action: manipulation;
+}
+
+/* Fullscreen: letterbox instead of cropping so nothing gets cut off. */
+.cp:fullscreen        { width: 100vw; height: 100vh; }
+.cp:-webkit-full-screen { width: 100vw; height: 100vh; }
+.cp:fullscreen .cp-video,
+.cp:-webkit-full-screen .cp-video { object-fit: contain; }
+
+.cp-tap {
+  position: absolute; inset: 0;
+  z-index: 1;
+  width: 100%; height: 100%;
+  background: transparent;
+  border: 0; padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cp-center {
+  position: absolute; inset: 0;
+  z-index: 2;
+  display: grid; place-items: center;
+  pointer-events: none;
+}
+.cp-center-btn {
+  pointer-events: auto;
+  display: grid; place-items: center;
+  width: 60px; height: 60px;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 242, 242, .28);
+  background: rgba(14, 20, 21, .55);
+  backdrop-filter: blur(6px);
+  color: var(--mist);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(.85);
+  transition: opacity .2s var(--ease), transform .2s var(--ease), background-color .2s, border-color .2s;
+}
+.cp-center-btn svg { display: block; width: 22px; height: 22px; }
+.cp-center-btn:hover { background: var(--signal); color: var(--ink); border-color: var(--signal); }
+.cp.is-paused .cp-center-btn,
+.cp.cp-active .cp-center-btn { opacity: 1; transform: none; }
+
+.cp-spinner {
+  position: absolute; inset: 0;
+  z-index: 2;
+  display: grid; place-items: center;
+  pointer-events: none;
+}
+.cp-spin-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .7rem;
+}
+.cp-spin-ring {
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  border: 2.5px solid rgba(237, 242, 242, .25);
+  border-top-color: var(--signal);
+  animation: cp-spin .8s linear infinite;
+}
+@keyframes cp-spin { to { transform: rotate(360deg); } }
+
+/* Shown only once buffering has dragged on for 2s+, so a normal, quick
+   rebuffer never flashes an extra message — only a genuinely slow one. */
+.cp-spin-slow {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .4rem;
+  opacity: 0;
+  animation: cp-spin-fade-in .45s var(--ease) forwards;
+}
+.cp-spin-slow[hidden] { display: none; }
+@keyframes cp-spin-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.cp-spin-cam {
+  width: 25px; height: 25px;
+  color: rgba(237, 242, 242, .7);
+}
+.cp-spin-lens { animation: cp-spin-blink 1.7s ease-in-out infinite; }
+@keyframes cp-spin-blink { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.cp-spin-text {
+  font-size: 11.5px;
+  letter-spacing: .01em;
+  color: rgba(237, 242, 242, .62);
+  text-align: center;
+}
+
+.cp-controls {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  padding: 2.4rem .8rem .6rem;
+  background: linear-gradient(to top, rgba(4, 6, 6, .84), rgba(4, 6, 6, .34) 65%, transparent);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+  pointer-events: none;
+}
+.cp-controls.is-visible,
+.cp.is-paused .cp-controls { opacity: 1; transform: none; pointer-events: auto; }
+
+.cp-progress { position: relative; height: 20px; display: flex; align-items: center; }
+.cp-track {
+  position: absolute; left: 0; right: 0;
+  height: 4px; border-radius: 999px;
+  background: rgba(237, 242, 242, .22);
+}
+.cp-buffered, .cp-played {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 0%; border-radius: 999px;
+}
+.cp-buffered { background: rgba(237, 242, 242, .35); }
+.cp-played   { background: var(--signal); }
+.cp-knob {
+  position: absolute; top: 50%; left: 0%;
+  width: 12px; height: 12px;
+  border-radius: 999px;
+  background: var(--signal);
+  transform: translate(-50%, -50%) scale(.001);
+  transition: transform .15s var(--ease);
+  box-shadow: 0 0 0 3px rgba(77, 182, 196, .25);
+}
+.cp-progress:hover .cp-knob,
+.cp-seek:focus-visible ~ .cp-track .cp-knob,
+.cp-seek:active ~ .cp-track .cp-knob { transform: translate(-50%, -50%) scale(1); }
+
+.cp-seek {
+  position: relative; z-index: 1;
+  width: 100%; height: 20px;
+  margin: 0;
+  background: transparent;
+  appearance: none; -webkit-appearance: none;
+  cursor: pointer;
+}
+.cp-seek::-webkit-slider-runnable-track { background: transparent; }
+.cp-seek::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 20px; height: 20px;
+  background: transparent;
+}
+.cp-seek::-moz-range-track  { background: transparent; border: 0; }
+.cp-seek::-moz-range-thumb  { width: 20px; height: 20px; background: transparent; border: 0; }
+
+.cp-scrub {
+  position: absolute;
+  bottom: 3.6rem;
+  z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: .32rem;
+  pointer-events: none;
+}
+.cp-scrub[hidden], .cp-spinner[hidden], .cp-spin-slow[hidden] { display: none; }
+.cp-scrub-canvas {
+  display: block;
+  border-radius: 6px;
+  border: 1px solid rgba(237, 242, 242, .25);
+  background: #000;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+}
+.cp-scrub-time {
+  padding: .18rem .5rem;
+  border-radius: 5px;
+  background: rgba(14, 20, 21, .88);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mist);
+}
+
+.cp-row { display: flex; align-items: center; gap: .3rem; margin-top: .6rem; }
+
+.cp-btn {
+  position: relative;
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border: 0; border-radius: 8px;
+  background: transparent;
+  color: var(--mist);
+  cursor: pointer;
+  transition: background-color .18s var(--ease);
+}
+.cp-btn:hover { background: rgba(237, 242, 242, .12); }
+.cp-btn svg { display: block; width: 18px; height: 18px; }
+.cp-btn[hidden] { display: none; }
+
+.cp-back em, .cp-fwd em {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  font-style: normal; font-size: 8px; font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+
+.cp-time {
+  display: flex; align-items: center; gap: .3rem;
+  margin-left: .2rem;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(237, 242, 242, .82);
+  white-space: nowrap;
+}
+.cp-sep { color: rgba(237, 242, 242, .45); }
+.cp-row-spacer { flex: 1; }
+
+@media (max-width: 480px) {
+  .cp-btn { width: 30px; height: 30px; }
+  .cp-btn svg { width: 16px; height: 16px; }
+  .cp-time { font-size: 11px; }
+  .cp-center-btn { width: 52px; height: 52px; }
+  .cp-center-btn svg { width: 19px; height: 19px; }
+  .cp-controls { padding: 2rem .55rem .55rem; }
+  .cp-row { gap: .1rem; }
+}
+
+/* ── Player: volume slider ─────────────────────────────────────────────── */
+
+.cp-vol { display: flex; align-items: center; }
+.cp-vol-range[hidden] { display: none; }
+.cp-vol-range {
+  --v: 100%;
+  -webkit-appearance: none; appearance: none;
+  width: 0; height: 18px; margin: 0; padding: 0;
+  opacity: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: width .25s var(--ease), opacity .2s var(--ease), margin .25s var(--ease);
+}
+/* desktop: the slider slides out when you hover or focus the speaker */
+.cp-vol:hover .cp-vol-range,
+.cp-vol:focus-within .cp-vol-range { width: 76px; opacity: 1; margin: 0 .5rem 0 .15rem; }
+/* touch: no hover, so keep it visible (compact) */
+@media (hover: none) {
+  .cp-vol-range { width: 56px; opacity: 1; margin: 0 .35rem 0 .1rem; }
+}
+.cp-vol-range::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 3px;
+  background: linear-gradient(to right, var(--signal) var(--v), rgba(237, 242, 242, .28) var(--v));
+}
+.cp-vol-range::-moz-range-track {
+  height: 3px; border-radius: 3px; background: rgba(237, 242, 242, .28);
+}
+.cp-vol-range::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--signal); }
+.cp-vol-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; margin-top: -4.5px;
+  border-radius: 999px; border: 0;
+  background: var(--mist);
+  box-shadow: 0 0 0 3px rgba(14, 20, 21, .35);
+}
+.cp-vol-range::-moz-range-thumb {
+  width: 12px; height: 12px;
+  border-radius: 999px; border: 0;
+  background: var(--mist);
+}
+.cp-vol-range:focus-visible { outline-offset: 4px; }
+
+/* ── Player: quality chip, "developing" loader, disclaimer, shutter ────── */
+
+.cp-topbar {
+  position: absolute; top: .7rem; left: .7rem;
+  z-index: 4;
+  opacity: 0; transform: translateY(-4px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+  pointer-events: none;
+}
+.cp.cp-active .cp-topbar,
+.cp.is-paused .cp-topbar { opacity: 1; transform: none; pointer-events: auto; }
+.cp.is-loading .cp-topbar { display: none; }
+
+.cp-q[hidden] { display: none; }
+.cp-q {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .34rem .7rem .34rem .55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 242, 242, .2);
+  background: rgba(14, 20, 21, .62);
+  backdrop-filter: blur(6px);
+  color: var(--mist);
+  font-family: inherit; font-size: 11.5px; font-weight: 600; line-height: 1; letter-spacing: .02em;
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+.cp-q svg { width: 15px; height: 15px; display: block; }
+.cp-q:hover { border-color: var(--signal); }
+.cp-q[data-mode="full"] { color: var(--signal); border-color: rgba(77, 182, 196, .55); }
+.cp-q.is-pop { animation: cp-pop .6s var(--ease); }
+@keyframes cp-pop { 0% { transform: scale(.85); } 45% { transform: scale(1.08); } 100% { transform: none; } }
+
+/* camera lens "focus-pulls" while anything is loading */
+.cp-cam-lens { transform-origin: 12px 13.6px; }
+.cp-hud-cam .cp-cam-lens { animation: cp-focus 1.6s ease-in-out infinite; }
+@keyframes cp-focus { 0%, 100% { transform: scale(1); opacity: .5; } 50% { transform: scale(.55); opacity: 1; } }
+
+.cp-hud[hidden] { display: none; }
+.cp-hud, .cp-hud *, .cp-confirm, .cp-confirm-card, .cp-q, .cp-frames i { box-sizing: border-box; }
+.cp-hud {
+  position: absolute; top: .7rem; left: .7rem;
+  z-index: 4;
+  display: flex; gap: .7rem; align-items: flex-start;
+  width: min(330px, calc(100% - 1.4rem));
+  padding: .7rem .8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(237, 242, 242, .16);
+  background: rgba(14, 20, 21, .74);
+  backdrop-filter: blur(10px);
+  animation: cp-spin-fade-in .35s var(--ease);
+}
+.cp-hud-cam { flex: none; width: 26px; height: 26px; color: var(--signal); margin-top: 1px; }
+.cp-hud-cam svg { width: 100%; height: 100%; display: block; }
+.cp-hud-body { flex: 1; min-width: 0; }
+.cp-hud-title { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--mist); }
+.cp-hud-sub { margin: .18rem 0 0; font-size: 11.5px; line-height: 1.4; color: rgba(237, 242, 242, .68); }
+
+/* ten "frames" of film that light up as the footage arrives */
+.cp-frames { display: flex; gap: 3px; margin-top: .6rem; }
+.cp-frames i {
+  flex: 1; height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(237, 242, 242, .26);
+  transition: background-color .35s var(--ease), border-color .35s var(--ease), box-shadow .35s var(--ease);
+}
+.cp-frames i.is-lit { background: var(--tungsten); border-color: var(--tungsten); box-shadow: 0 0 6px rgba(232, 184, 109, .45); }
+.cp-frames i.is-next { animation: cp-frame-pulse 1.1s ease-in-out infinite; }
+@keyframes cp-frame-pulse { 0%, 100% { background: transparent; } 50% { background: rgba(232, 184, 109, .35); } }
+
+.cp-hud-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.cp-hud-actions button[hidden] { display: none; }
+.cp-hud-actions button,
+.cp-spin-fallback {
+  padding: .3rem .65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 242, 242, .24);
+  background: transparent;
+  color: var(--mist);
+  font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1.2;
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+.cp-hud-actions button:hover,
+.cp-spin-fallback:hover { border-color: var(--signal); color: var(--signal); }
+.cp-hud-pause { border-color: rgba(232, 184, 109, .55) !important; color: var(--tungsten) !important; }
+
+.cp-spin-fallback[hidden] { display: none; }
+.cp-spin-fallback { pointer-events: auto; margin-top: .2rem; background: rgba(14, 20, 21, .6); }
+
+/* the sit-down-and-read-this step before a big download starts */
+.cp-confirm[hidden] { display: none; }
+.cp-confirm {
+  position: absolute; inset: 0;
+  z-index: 6;
+  display: flex; padding: 1rem;
+  overflow-y: auto;
+  background: rgba(6, 9, 9, .66);
+  backdrop-filter: blur(5px);
+}
+.cp-confirm-card {
+  margin: auto;
+  width: min(340px, 100%);
+  padding: 1.2rem 1.25rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: center;
+  animation: cp-spin-fade-in .35s var(--ease);
+}
+.cp-confirm-ic { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; background: rgba(77, 182, 196, .12); color: var(--signal); }
+.cp-confirm-ic svg { width: 21px; height: 21px; display: block; }
+.cp-confirm-title { margin: .7rem 0 .35rem; font-size: 15px; font-weight: 600; color: var(--mist); }
+.cp-confirm-text { margin: .35rem 0 0; font-size: 12.5px; line-height: 1.55; color: rgba(237, 242, 242, .68); }
+.cp-confirm-size { color: var(--tungsten); }
+.cp-confirm-actions { display: flex; flex-direction: column; gap: .45rem; margin-top: 1rem; }
+.cp-confirm-go, .cp-confirm-no {
+  padding: .6rem 1rem; border-radius: 999px;
+  font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; cursor: pointer;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.cp-confirm-go { border: 0; background: var(--signal); color: var(--ink); }
+.cp-confirm-go:hover { background: var(--mist); }
+.cp-confirm-no { border: 1px solid var(--line); background: transparent; color: rgba(237, 242, 242, .8); }
+.cp-confirm-no:hover { border-color: var(--signal); color: var(--signal); }
+
+/* the second video that loads quietly behind the one you're watching */
+.player .cp-video--standby { visibility: hidden; pointer-events: none; }
+
+/* shutter flash when full quality takes over */
+.cp-flash { position: absolute; inset: 0; z-index: 5; background: #fff; opacity: 0; pointer-events: none; }
+.cp.is-flash .cp-flash { animation: cp-flash .5s ease-out; }
+@keyframes cp-flash { 0% { opacity: .8; } 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-flash, .cp-frames i.is-next, .cp-hud-cam .cp-cam-lens, .cp-q.is-pop { animation: none !important; }
+}
+
+@media (max-width: 480px) {
+  .cp-topbar, .cp-hud { top: .5rem; left: .5rem; }
+  .cp-hud { width: calc(100% - 1rem); }
+  .cp-vol-range { width: 46px; }
+}
+
+/* Narrow players (a tall portrait reel on a phone): make room in the control
+   row — drop picture-in-picture and shrink the volume slider. Keyed to the
+   player's own width, not the screen's, so it also covers narrow desktop windows. */
+.player .cp { container-type: inline-size; }
+@container (max-width: 300px) {
+  .cp-pip { display: none; }
+  .cp-time { margin-left: 0; }
+  .cp-vol-range,
+  .cp-vol:hover .cp-vol-range,
+  .cp-vol:focus-within .cp-vol-range { width: 38px; margin: 0 .3rem 0 0; }
+}
+
+/* the action button in the "preview is compressed" note */
+
+
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -167,7 +596,7 @@ const CONFIG = {
 
 const CATS = ["Cut / trim","Audio","Music","Colour","Text / graphics","Speed / pacing","Other"];
 const PRIS = [["must","Must fix"],["nice","Nice to have"]];
-const $ = s => document.querySelector(s);
+const $ = (s,r) => (r||document).querySelector(s);
 const params = new URLSearchParams(location.search);
 
 let state = {client:"",version:"",general:"",items:[]};
@@ -259,10 +688,934 @@ function parseVideo(url){
   return mkVid('file',url,url);   // direct file or unknown host: try as video
 }
 
+
+/* ---- player glue ---- */
+const $$ = (s,r) => Array.from((r||document).querySelectorAll(s));
+const stage = document.querySelector("#player");
+let fullQuality = null;      // quality switch is not used on the review page
+const modalQualityLink = {};
+let activePlayer = null;
+let stageToken = 0;
+function setQualityUi(){}
+function setStageRatio(r){ if(r && isFinite(r) && r>0) stage.style.setProperty("--ratio", r); }
+function measureFileRatio(videoEl, token){
+  videoEl.addEventListener("loadedmetadata",()=>{
+    if(token!==stageToken) return;
+    if(videoEl.videoWidth && videoEl.videoHeight) setStageRatio(videoEl.videoWidth/videoEl.videoHeight);
+  },{once:true});
+}
+function dropPlayer(){ if(activePlayer){ try{activePlayer.destroy()}catch(e){} activePlayer=null; } }
+function onPlayerError(info){
+  dropPlayer();
+  stage.innerHTML='<div class="empty">This link would not play here.</div>';
+  api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
+  const h=$("#playerHint"); h.textContent="Open the video in a new tab: ";
+  const a=document.createElement("a"); a.href=info.original; a.target="_blank"; a.rel="noopener"; a.textContent="open link";
+  h.appendChild(a); h.append(". Then type the time yourself.");
+}
+/* ---- your portfolio player (copied) ---- */
+  function formatTime(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const mm = h ? String(m).padStart(2, '0') : String(m);
+    const ss = String(s).padStart(2, '0');
+    return h ? (h + ':' + mm + ':' + ss) : (mm + ':' + ss);
+  }
+
+  const CP_ICON = {
+    play:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>',
+    back:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
+    fwd:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+    vol:   '<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.4 8.6a5 5 0 0 1 0 6.8M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    volLow:'<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.4 8.6a5 5 0 0 1 0 6.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    mute:  '<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    cam:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="19" height="13" rx="2.6"/><path d="M8 7l1.7-2.5h4.6L16 7"/><circle class="cp-cam-lens" cx="12" cy="13.6" r="3.5"/></svg>',
+    pip:   '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="12.5" y="12" width="7" height="5" rx="1" fill="currentColor"/></svg>',
+    fs:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    fsx:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
+  };
+
+  function createCustomPlayer(videoInfo, token) {
+    // A full-quality twin of this video, if the project has one that the
+    // custom player can stream (and that isn't just the same file again).
+    let fullInfo = null;
+    if (fullQuality) {
+      const fi = parseVideo(fullQuality.url);
+      if (fi && fi.kind === 'file' && fi.src !== videoInfo.src) {
+        fi.size = fullQuality.size || '';
+        fullInfo = fi;
+      }
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'cp is-paused';
+    wrap.innerHTML = [
+      '<video class="cp-video" playsinline preload="metadata"></video>',
+      '<button type="button" class="cp-tap" aria-label="Show or hide controls"></button>',
+
+      '<div class="cp-center">',
+        '<button type="button" class="cp-center-btn" aria-label="Play">',
+          '<span class="ic-play">', CP_ICON.play, '</span>',
+          '<span class="ic-pause" hidden>', CP_ICON.pause, '</span>',
+        '</button>',
+      '</div>',
+
+      '<div class="cp-spinner" hidden>',
+        '<div class="cp-spin-inner">',
+          '<span class="cp-spin-ring"></span>',
+          '<div class="cp-spin-slow" hidden>',
+            '<svg class="cp-spin-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+              '<rect x="2.5" y="7" width="19" height="13" rx="2.6"/>',
+              '<path d="M8 7l1.7-2.5h4.6L16 7"/>',
+              '<circle class="cp-spin-lens" cx="12" cy="13.6" r="3.5"/>',
+            '</svg>',
+            '<span class="cp-spin-text">Slow internet speed…<br>Trying to optimise..</span>',
+            '<button type="button" class="cp-spin-fallback" hidden>Switch to lighter preview</button>',
+          '</div>',
+        '</div>',
+      '</div>',
+
+      '<div class="cp-topbar">',
+        '<button type="button" class="cp-q" hidden>', CP_ICON.cam, '<span class="cp-q-label">Preview</span></button>',
+      '</div>',
+
+      // Background "developing" loader — the preview keeps playing under it.
+      '<div class="cp-hud" hidden>',
+        '<span class="cp-hud-cam">', CP_ICON.cam, '</span>',
+        '<div class="cp-hud-body">',
+          '<p class="cp-hud-title">Developing full quality…</p>',
+          '<p class="cp-hud-sub"></p>',
+          '<div class="cp-frames" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>',
+          '<div class="cp-hud-actions">',
+            '<button type="button" class="cp-hud-pause" hidden>Pause &amp; load faster</button>',
+            '<button type="button" class="cp-hud-cancel">Cancel</button>',
+          '</div>',
+        '</div>',
+      '</div>',
+
+      // Disclaimer shown before the big file starts downloading.
+      '<div class="cp-confirm" role="dialog" aria-label="Switch to full quality" hidden>',
+        '<div class="cp-confirm-card">',
+          '<span class="cp-confirm-ic">', CP_ICON.cam, '</span>',
+          '<p class="cp-confirm-title">Switch to full quality?</p>',
+          '<p class="cp-confirm-text">This is the original, uncompressed file — much larger than the preview, so it takes longer to load and uses more data.<span class="cp-confirm-size"></span></p>',
+          '<p class="cp-confirm-text">Your preview keeps playing while it loads, and we’ll switch over the moment it’s ready.</p>',
+          '<div class="cp-confirm-actions">',
+            '<button type="button" class="cp-confirm-go">Load full quality</button>',
+            '<button type="button" class="cp-confirm-no">Not now</button>',
+          '</div>',
+        '</div>',
+      '</div>',
+
+      '<div class="cp-flash" aria-hidden="true"></div>',
+
+      '<div class="cp-scrub" hidden>',
+        '<canvas class="cp-scrub-canvas"></canvas>',
+        '<span class="cp-scrub-time">0:00</span>',
+      '</div>',
+
+      '<div class="cp-controls">',
+        '<div class="cp-progress">',
+          '<div class="cp-track">',
+            '<div class="cp-buffered"></div>',
+            '<div class="cp-played"></div>',
+            '<div class="cp-knob"></div>',
+          '</div>',
+          '<input type="range" class="cp-seek" min="0" max="1000" step="0.1" value="0" aria-label="Seek">',
+        '</div>',
+
+        '<div class="cp-row">',
+          '<button type="button" class="cp-btn cp-play" aria-label="Play">',
+            '<span class="ic-play">', CP_ICON.play, '</span>',
+            '<span class="ic-pause" hidden>', CP_ICON.pause, '</span>',
+          '</button>',
+          '<button type="button" class="cp-btn cp-back" aria-label="Back 10 seconds" hidden>', CP_ICON.back, '<em>10</em></button>',
+          '<button type="button" class="cp-btn cp-fwd" aria-label="Forward 10 seconds" hidden>', CP_ICON.fwd, '<em>10</em></button>',
+          '<span class="cp-time"><span class="cp-cur">0:00</span><span class="cp-sep">/</span><span class="cp-dur">0:00</span></span>',
+          '<span class="cp-row-spacer"></span>',
+          '<div class="cp-vol">',
+            '<button type="button" class="cp-btn cp-mute" aria-label="Mute">',
+              '<span class="ic-vol">', CP_ICON.vol, '</span>',
+              '<span class="ic-low" hidden>', CP_ICON.volLow, '</span>',
+              '<span class="ic-mute" hidden>', CP_ICON.mute, '</span>',
+            '</button>',
+            '<input type="range" class="cp-vol-range" min="0" max="1" step="0.01" value="1" aria-label="Volume">',
+          '</div>',
+          '<button type="button" class="cp-btn cp-pip" aria-label="Picture in picture" hidden>', CP_ICON.pip, '</button>',
+          '<button type="button" class="cp-btn cp-fs" aria-label="Full screen">',
+            '<span class="ic-fs">', CP_ICON.fs, '</span>',
+            '<span class="ic-fsx" hidden>', CP_ICON.fsx, '</span>',
+          '</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+
+    const el = $('.cp-video', wrap);
+    el.src = videoInfo.src;
+    el.autoplay = false;
+    el.preload = 'metadata';
+    // No crossOrigin attribute — see the note on the plain-file branch
+    // this replaces: forcing CORS mode breaks playback on hosts (like
+    // Dropbox's raw-content host) that don't send CORS headers.
+    el._info = videoInfo;
+    measureFileRatio(el, token);
+
+    wireCustomPlayer(wrap, el, videoInfo, fullInfo);
+    return wrap;
+  }
+
+  function wireCustomPlayer(wrap, el, videoInfo, fullInfo) {
+    const tap       = $('.cp-tap', wrap);
+    const centerBtn = $('.cp-center-btn', wrap);
+    const spinner   = $('.cp-spinner', wrap);
+    const controls  = $('.cp-controls', wrap);
+    const seek      = $('.cp-seek', wrap);
+    const track     = $('.cp-track', wrap);
+    const bufferedEl= $('.cp-buffered', wrap);
+    const playedEl  = $('.cp-played', wrap);
+    const knob      = $('.cp-knob', wrap);
+    const scrubBox  = $('.cp-scrub', wrap);
+    const scrubCanvas = $('.cp-scrub-canvas', wrap);
+    const scrubTime = $('.cp-scrub-time', wrap);
+    const playBtn   = $('.cp-play', wrap);
+    const backBtn   = $('.cp-back', wrap);
+    const fwdBtn    = $('.cp-fwd', wrap);
+    const curEl     = $('.cp-cur', wrap);
+    const durEl     = $('.cp-dur', wrap);
+    const muteBtn   = $('.cp-mute', wrap);
+    const pipBtn    = $('.cp-pip', wrap);
+    const fsBtn     = $('.cp-fs', wrap);
+    const scrubCtx  = scrubCanvas.getContext('2d');
+
+    let scrubbing = false;
+    let hideTimer = null;
+    let previewVideo = null;
+    let previewReady = false;
+    let previewBusy = false;
+    let pendingPreviewTime = null;
+
+    // Quality switching state. `el` is always the video on screen; a second,
+    // hidden "standby" video loads the other version in the background.
+    let mode = 'preview';           // which source is on screen
+    let switching = null;           // the in-flight switch, if any
+    let swapping = false;           // true for the instant of the hand-off
+    let lastVolume = 0.7;
+    let fallbackTimer = null;
+    const mediaHandlers = {};
+
+    // Media events are routed by type, and only the video that's on screen
+    // gets to act on them — so the standby video can buffer silently.
+    function onMedia(type, fn) { mediaHandlers[type] = fn; }
+    function bindMedia(v) {
+      Object.keys(mediaHandlers).forEach(type => {
+        v.addEventListener(type, e => {
+          if (v !== el) return;
+          if (swapping && (type === 'pause' || type === 'play' || type === 'ended')) return;
+          mediaHandlers[type](e);
+        });
+      });
+      // A file that refuses to stream (private, login wall, unsupported
+      // codec) falls back to opening the original share link.
+      v.addEventListener('error', () => {
+        if (v !== el || !stage.contains(wrap)) return;
+        onPlayerError(v._info || videoInfo);
+      });
+    }
+
+    function setPauseIcons(host, isPaused) {
+      $('.ic-play', host).hidden = !isPaused;
+      $('.ic-pause', host).hidden = isPaused;
+    }
+
+    function syncPlayState() {
+      if (swapping) return;
+      const paused = el.paused || el.ended;
+      wrap.classList.toggle('is-paused', paused);
+      setPauseIcons(centerBtn, paused);
+      setPauseIcons(playBtn, paused);
+    }
+
+    function play() { el.play().catch(() => {}); }
+    function togglePlay() { (el.paused || el.ended) ? play() : el.pause(); }
+
+    function showControls(keep) {
+      controls.classList.add('is-visible');
+      wrap.classList.add('cp-active');
+      window.clearTimeout(hideTimer);
+      if (!keep && !el.paused) {
+        hideTimer = window.setTimeout(() => {
+          if (!el.paused && !scrubbing) hideControlsNow();
+        }, 2600);
+      }
+    }
+    function hideControlsNow() {
+      window.clearTimeout(hideTimer);
+      controls.classList.remove('is-visible');
+      wrap.classList.remove('cp-active');
+      hideScrub();
+    }
+
+    tap.addEventListener('click', () => showControls());
+    wrap.addEventListener('mousemove', () => showControls());
+    wrap.addEventListener('mouseleave', () => { if (!el.paused) hideControlsNow(); });
+    // Mobile: a touch anywhere on the player brings the controls back,
+    // whatever it lands on (video surface, a button, the progress bar…).
+    wrap.addEventListener('touchstart', () => showControls(), { passive: true });
+
+    centerBtn.addEventListener('click', () => { togglePlay(); showControls(); });
+    playBtn.addEventListener('click',   () => { togglePlay(); showControls(); });
+
+    onMedia('play',  () => { if (switching) switching.pausedByUs = false; syncPlayState(); showControls(); });
+    onMedia('pause', () => { syncPlayState(); showControls(true); });
+    onMedia('ended', () => { syncPlayState(); showControls(true); });
+
+    let slowTimer = null;
+    const spinSlow = $('.cp-spin-slow', wrap);
+    const spinFallback = $('.cp-spin-fallback', wrap);
+    function startBuffering() {
+      if (swapping) return;
+      spinner.hidden = false;
+      window.clearTimeout(slowTimer);
+      slowTimer = window.setTimeout(() => { spinSlow.hidden = false; }, 2000);
+      // Stuck on the big file for 5s+? Offer the light preview instead.
+      window.clearTimeout(fallbackTimer);
+      if (mode === 'full' && fullInfo && !switching) {
+        fallbackTimer = window.setTimeout(() => { spinFallback.hidden = false; }, 5000);
+      }
+    }
+    function stopBuffering() {
+      spinner.hidden = true;
+      spinSlow.hidden = true;
+      spinFallback.hidden = true;
+      window.clearTimeout(slowTimer);
+      window.clearTimeout(fallbackTimer);
+    }
+    onMedia('waiting', startBuffering);
+    onMedia('stalled', startBuffering);
+    onMedia('playing', stopBuffering);
+    onMedia('canplay', stopBuffering);
+
+    function updateDuration() {
+      if (isFinite(el.duration)) durEl.textContent = formatTime(el.duration);
+    }
+    onMedia('loadedmetadata', updateDuration);
+    onMedia('durationchange', updateDuration);
+
+    function updateProgress() {
+      if (scrubbing || !isFinite(el.duration) || el.duration <= 0) return;
+      const pct = (el.currentTime / el.duration) * 100;
+      playedEl.style.width = pct + '%';
+      knob.style.left = pct + '%';
+      seek.value = String(pct * 10);
+      curEl.textContent = formatTime(el.currentTime);
+    }
+    onMedia('timeupdate', updateProgress);
+
+    function updateBuffered() {
+      if (!el.buffered.length || !isFinite(el.duration) || el.duration <= 0) return;
+      let end = 0;
+      for (let i = 0; i < el.buffered.length; i++) {
+        if (el.buffered.start(i) <= el.currentTime + 0.5) end = Math.max(end, el.buffered.end(i));
+      }
+      bufferedEl.style.width = Math.min(100, (end / el.duration) * 100) + '%';
+    }
+    onMedia('progress', updateBuffered);
+
+    function skip(delta) {
+      if (!isFinite(el.duration)) return;
+      el.currentTime = Math.min(Math.max(el.currentTime + delta, 0), el.duration);
+      showControls();
+    }
+    backBtn.addEventListener('click', () => skip(-10));
+    fwdBtn.addEventListener('click',  () => skip(10));
+
+    function seekFromInput() {
+      if (!isFinite(el.duration)) return;
+      const pct = parseFloat(seek.value) / 10;
+      const t = (pct / 100) * el.duration;
+      el.currentTime = t;
+      playedEl.style.width = pct + '%';
+      knob.style.left = pct + '%';
+      curEl.textContent = formatTime(t);
+    }
+    seek.addEventListener('input', () => { scrubbing = true; seekFromInput(); showControls(true); });
+
+    /* --- Frame preview while scrubbing ---------------------------------- */
+
+    function ensurePreviewVideo() {
+      if (previewVideo) return previewVideo;
+      const pv = document.createElement('video');
+      pv.src = videoInfo.src;
+      pv.muted = true;
+      pv.preload = 'auto';
+      pv.playsInline = true;
+      pv.setAttribute('aria-hidden', 'true');
+      pv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+      pv.addEventListener('loadedmetadata', () => {
+        previewReady = true;
+        if (pendingPreviewTime !== null) {
+          const t = pendingPreviewTime;
+          pendingPreviewTime = null;
+          requestPreviewFrame(t);
+        }
+      });
+      pv.addEventListener('seeked', () => {
+        previewBusy = false;
+        try {
+          const aspect = (pv.videoWidth && pv.videoHeight) ? (pv.videoWidth / pv.videoHeight) : (16 / 9);
+          const maxW = 170, maxH = 120;
+          let w = maxW, h = Math.round(maxW / aspect);
+          if (h > maxH) { h = maxH; w = Math.round(maxH * aspect); }
+          scrubCanvas.width = w;
+          scrubCanvas.height = h;
+          scrubCanvas.style.width = w + 'px';
+          scrubCanvas.style.height = h + 'px';
+          scrubCtx.drawImage(pv, 0, 0, w, h);
+        } catch (err) { /* not decodable yet — keep whatever's already drawn */ }
+        if (pendingPreviewTime !== null) {
+          const t = pendingPreviewTime;
+          pendingPreviewTime = null;
+          requestPreviewFrame(t);
+        }
+      });
+      pv.addEventListener('error', () => { previewVideo = null; previewReady = false; });
+      wrap.appendChild(pv);
+      previewVideo = pv;
+      return pv;
+    }
+
+    function requestPreviewFrame(t) {
+      const pv = ensurePreviewVideo();
+      if (!previewReady) { pendingPreviewTime = t; return; }
+      if (previewBusy) { pendingPreviewTime = t; return; }
+      previewBusy = true;
+      try { pv.currentTime = t; } catch (err) { previewBusy = false; }
+      // Safety net: some browsers skip 'seeked' when the target time
+      // rounds to the frame already showing — don't let that wedge the lock.
+      window.setTimeout(() => { previewBusy = false; }, 260);
+    }
+
+    function showScrubAt(clientX) {
+      if (!isFinite(el.duration) || el.duration <= 0) return;
+      const rect = track.getBoundingClientRect();
+      if (!rect.width) return;
+      let x = clientX - rect.left;
+      x = Math.min(Math.max(x, 0), rect.width);
+      const t = (x / rect.width) * el.duration;
+
+      scrubBox.hidden = false;
+      const boxWidth = scrubBox.offsetWidth || 90;
+      let left = x - boxWidth / 2;
+      left = Math.min(Math.max(left, 0), Math.max(0, rect.width - boxWidth));
+      scrubBox.style.left = left + 'px';
+      scrubTime.textContent = formatTime(t);
+
+      requestPreviewFrame(t);
+    }
+    function hideScrub() { scrubBox.hidden = true; }
+
+    seek.addEventListener('pointerdown', e => { scrubbing = true; showScrubAt(e.clientX); showControls(true); });
+    track.addEventListener('mousemove', e => { if (!scrubbing) showScrubAt(e.clientX); });
+    seek.addEventListener('mousemove', e => showScrubAt(e.clientX));
+    track.addEventListener('mouseleave', () => { if (!scrubbing) hideScrub(); });
+    seek.addEventListener('touchstart', e => {
+      if (e.touches && e.touches[0]) { scrubbing = true; showScrubAt(e.touches[0].clientX); showControls(true); }
+    }, { passive: true });
+    seek.addEventListener('touchmove', e => {
+      if (e.touches && e.touches[0]) showScrubAt(e.touches[0].clientX);
+    }, { passive: true });
+    seek.addEventListener('touchend', () => { scrubbing = false; hideScrub(); showControls(); });
+    window.addEventListener('pointerup', () => {
+      if (scrubbing) { scrubbing = false; hideScrub(); showControls(); }
+    });
+
+    /* --- Volume: mute button + slider ------------------------------------ */
+    const volRange = $('.cp-vol-range', wrap);
+
+    // iOS Safari keeps video.volume read-only (the hardware buttons rule),
+    // so there the slider is hidden and only the mute button remains.
+    const canSetVolume = (() => {
+      try { const t = document.createElement('video'); t.volume = 0.5; return t.volume === 0.5; }
+      catch (err) { return false; }
+    })();
+    if (!canSetVolume) volRange.hidden = true;
+
+    function syncMute() {
+      const level = el.muted ? 0 : el.volume;
+      $('.ic-vol',  muteBtn).hidden = !(level > 0.5);
+      $('.ic-low',  muteBtn).hidden = !(level > 0 && level <= 0.5);
+      $('.ic-mute', muteBtn).hidden = level > 0;
+      muteBtn.setAttribute('aria-label', level === 0 ? 'Unmute' : 'Mute');
+      volRange.value = String(level);
+      volRange.style.setProperty('--v', (level * 100) + '%');
+    }
+    function toggleMute() {
+      if (el.muted || el.volume === 0) {
+        el.muted = false;
+        if (el.volume === 0) el.volume = lastVolume || 0.7;
+      } else {
+        lastVolume = el.volume;
+        el.muted = true;
+      }
+      syncMute();
+    }
+    function nudgeVolume(delta) {
+      const next = Math.min(1, Math.max(0, (el.muted ? 0 : el.volume) + delta));
+      if (next > 0) lastVolume = next;
+      el.volume = next;
+      el.muted = next === 0;
+      syncMute();
+    }
+    muteBtn.addEventListener('click', () => { toggleMute(); showControls(); });
+    volRange.addEventListener('input', () => {
+      const v = parseFloat(volRange.value);
+      if (v > 0) lastVolume = v;
+      el.volume = v;
+      el.muted = v === 0;
+      syncMute();
+      showControls();
+    });
+    onMedia('volumechange', syncMute);
+    syncMute();
+
+    /* --- Picture-in-picture --------------------------------------------- */
+    const pipSupported =
+      (document.pictureInPictureEnabled && !!el.requestPictureInPicture) ||
+      (typeof el.webkitSupportsPresentationMode === 'function' && el.webkitSupportsPresentationMode('picture-in-picture'));
+
+    if (pipSupported) {
+      pipBtn.hidden = false;
+      pipBtn.addEventListener('click', async () => {
+        try {
+          if (document.pictureInPictureElement === el) {
+            await document.exitPictureInPicture();
+          } else if (el.requestPictureInPicture) {
+            await el.requestPictureInPicture();
+          } else if (el.webkitSetPresentationMode) {
+            el.webkitSetPresentationMode(
+              el.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture'
+            );
+          }
+        } catch (err) { /* blocked — e.g. no user gesture registered — ignore */ }
+      });
+    }
+
+    /* --- Fullscreen ------------------------------------------------------ */
+    // The 10s skip buttons only show up in fullscreen — kept out of the
+    // way in the small inline player, one tap away once it matters.
+    function inFullscreen() {
+      return document.fullscreenElement === wrap || document.webkitFullscreenElement === wrap;
+    }
+    function syncFsIcons() {
+      const fs = inFullscreen();
+      $('.ic-fs', fsBtn).hidden = fs;
+      $('.ic-fsx', fsBtn).hidden = !fs;
+      backBtn.hidden = !fs;
+      fwdBtn.hidden = !fs;
+    }
+    fsBtn.addEventListener('click', () => {
+      if (inFullscreen()) {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      } else if (wrap.requestFullscreen) {
+        wrap.requestFullscreen().catch(() => {});
+      } else if (wrap.webkitRequestFullscreen) {
+        wrap.webkitRequestFullscreen();
+      } else if (el.webkitEnterFullscreen) {
+        // iOS Safari: arbitrary elements can't go fullscreen, only <video>.
+        el.webkitEnterFullscreen();
+      }
+      showControls();
+    });
+    document.addEventListener('fullscreenchange', syncFsIcons);
+    document.addEventListener('webkitfullscreenchange', syncFsIcons);
+
+    syncPlayState();
+    syncFsIcons();
+    showControls();
+
+    /* --- Preview <-> full quality ----------------------------------------
+       The other version loads in a hidden standby <video> while the current
+       one keeps playing. Once the standby has enough buffered *ahead of the
+       playhead*, playback hands over at the exact same frame, with a shutter
+       flash. Nothing ever freezes or restarts while the big file downloads. */
+
+    const READY_AHEAD = 6;    // seconds that must be buffered before the swap
+    const FRAMES = 10;
+
+    const chip       = $('.cp-q', wrap);
+    const chipLabel  = $('.cp-q-label', wrap);
+    const hud        = $('.cp-hud', wrap);
+    const hudTitle   = $('.cp-hud-title', wrap);
+    const hudSub     = $('.cp-hud-sub', wrap);
+    const hudPause   = $('.cp-hud-pause', wrap);
+    const hudCancel  = $('.cp-hud-cancel', wrap);
+    const frames     = $$('.cp-frames i', wrap);
+    const confirmEl  = $('.cp-confirm', wrap);
+    const confirmGo  = $('.cp-confirm-go', wrap);
+    const confirmNo  = $('.cp-confirm-no', wrap);
+    let flashTimer = null;
+
+    function fmtEta(sec) {
+      return sec < 60 ? Math.max(1, Math.ceil(sec)) + 's' : Math.ceil(sec / 60) + ' min';
+    }
+
+    function rangeAt(v, t) {
+      for (let i = 0; i < v.buffered.length; i++) {
+        if (v.buffered.start(i) <= t + 0.25 && v.buffered.end(i) > t) {
+          return [v.buffered.start(i), v.buffered.end(i)];
+        }
+      }
+      return null;
+    }
+
+    function updateChip() {
+      if (!fullInfo) return;
+      chip.hidden = false;
+      chip.dataset.mode = switching ? 'loading' : mode;
+      chipLabel.textContent = switching ? 'Loading…' : (mode === 'full' ? 'Full quality' : 'Preview');
+      chip.title = mode === 'full' ? 'Switch back to the lighter preview' : 'Switch to full quality';
+      wrap.classList.toggle('is-loading', !!switching);
+    }
+
+    function paintFrames(progress) {
+      const lit = Math.floor(progress * FRAMES + 0.001);
+      frames.forEach((f, i) => {
+        f.classList.toggle('is-lit', i < lit);
+        f.classList.toggle('is-next', i === lit);
+      });
+    }
+
+    function paintHud(s, eta, slow) {
+      const toFull = s.target === 'full';
+      const pct = Math.round(s.progress * 100);
+      const ready = s.anchor !== null && isFinite(s.video.duration);
+      let title = toFull ? 'Developing full quality…' : 'Switching to preview…';
+      let sub;
+
+      if (!ready)              sub = toFull ? 'Contacting the original file. Your preview keeps playing.' : 'Just a moment.';
+      else if (s.pausedByUs)   sub = pct + '% developed · preview resumes automatically';
+      else if (slow)         { title = 'Slow lab today…'; sub = 'Full quality is arriving slower than the preview plays.'; }
+      else                     sub = pct + '% developed' + (eta ? ' · about ' + fmtEta(eta) + ' left' : '') + ' · preview keeps playing';
+
+      hudTitle.textContent = title;
+      hudSub.textContent = sub;
+      hudPause.hidden = !(slow && !s.pausedByUs);
+      paintFrames(s.progress);
+    }
+
+    function showHud(s) {
+      hud.hidden = false;
+      paintFrames(0);
+      paintHud(s, null, false);
+      showControls(true);
+    }
+    function hideHud() { hud.hidden = true; }
+
+    function anchorAt(s, t) {
+      const v = s.video;
+      s.anchor = Math.max(0, Math.min(t, (v.duration || t) - 0.5));
+      s.lastAnchorAt = performance.now();
+      s.anchorT = s.lastAnchorAt;
+      s.samples = [];
+      try { v.currentTime = s.anchor; } catch (err) { /* not seekable yet */ }
+    }
+
+    function startSwitch(target) {
+      if (switching || swapping || target === mode) return;
+      const info = target === 'full' ? fullInfo : videoInfo;
+      if (!info) return;
+
+      const next = document.createElement('video');
+      next.className = 'cp-video cp-video--standby';
+      next.playsInline = true;
+      next.muted = true;
+      next.preload = 'auto';
+      next.setAttribute('aria-hidden', 'true');
+      next._info = info;
+      next.src = info.src;
+      el.after(next);
+      bindMedia(next);
+
+      const s = {
+        target: target, video: next, anchor: null, lastAnchorAt: 0,
+        progress: 0, samples: [], startedAt: performance.now(),
+        pausedByUs: false, committing: false, timer: null
+      };
+      switching = s;
+
+      next.addEventListener('loadedmetadata', () => {
+        if (switching !== s) return;
+        anchorAt(s, el.currentTime + (!el.paused ? 1.5 : 0));
+      });
+      next.addEventListener('error', () => { if (switching === s) failSwitch(s); });
+      // how long a seek takes on this connection — used to time the hand-off
+      next.addEventListener('seeked', () => {
+        if (s.anchorT) { s.seekMs = performance.now() - s.anchorT; s.anchorT = 0; }
+      });
+
+      s.timer = window.setInterval(() => tickSwitch(s), 400);
+      setQualityUi(target === 'full' ? 'loading' : 'back');
+      updateChip();
+      showHud(s);
+    }
+
+    function disposeVideo(v) {
+      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (err) {}
+      if (v.parentNode) v.remove();
+    }
+
+    function endSwitch(s) {
+      window.clearInterval(s.timer);
+      window.clearInterval(s.poll);
+      window.clearTimeout(s.guard);
+      if (switching === s) switching = null;
+      hideHud();
+    }
+
+    function cancelSwitch(s) {
+      if (!s) return;
+      endSwitch(s);
+      disposeVideo(s.video);
+      if (s.pausedByUs) play();
+      setQualityUi(mode);
+      updateChip();
+    }
+
+    function failSwitch(s) {
+      const target = s.target;
+      endSwitch(s);
+      disposeVideo(s.video);
+      if (s.pausedByUs) play();
+      setQualityUi(target === 'full' ? 'error' : mode);
+      if (target === 'full') modalQualityLink.href = fullInfo.original;
+      updateChip();
+    }
+
+    function tickSwitch(s) {
+      if (switching !== s || s.committing) return;
+      if (!stage.contains(wrap)) { cancelSwitch(s); return; }
+
+      const v = s.video;
+      const now = performance.now();
+      if (s.anchor === null || !isFinite(v.duration)) { paintHud(s, null, false); return; }
+
+      const pos = el.currentTime;
+      const playing = !el.paused && !el.ended;
+      const need = Math.max(0.5, Math.min(READY_AHEAD, v.duration - pos));
+      const cover = rangeAt(v, pos);
+
+      // Browsers only prefetch a limited window ahead of a *paused* video's
+      // own position, then go idle. If the standby hit that ceiling before the
+      // playhead has enough runway, nudge it up to the playhead so it resumes.
+      if (cover && !v.seeking && v.networkState === 1 && cover[1] - pos < need &&
+          now - (s.lastRescueAt || 0) > 3000) {
+        s.lastRescueAt = now;
+        try { v.currentTime = pos; } catch (err) { /* ignore */ }
+      }
+
+      // Ready: the standby covers the playhead with enough runway ahead.
+      if (cover && (cover[1] - pos >= need - 0.05 || cover[1] >= v.duration - 0.15)) {
+        commitSwitch(s);
+        return;
+      }
+
+      // The playhead ran past whatever the standby has buffered (or the
+      // viewer scrubbed): re-aim the download at where they are now.
+      if (!cover && now - s.lastAnchorAt > (playing ? 6000 : 1500)) {
+        anchorAt(s, pos + (playing ? 3 : 0));
+      }
+
+      const anchorRange = rangeAt(v, s.anchor);
+      const bufLen = anchorRange ? anchorRange[1] - s.anchor : 0;
+      const required = Math.max(need, pos + need - s.anchor);
+      s.progress = Math.max(s.progress, Math.min(0.98, bufLen / required));
+
+      s.samples.push({ t: now, len: bufLen });
+      while (s.samples.length > 2 && now - s.samples[0].t > 6000) s.samples.shift();
+
+      // ETA = remaining runway ÷ how fast the buffer outruns the playhead.
+      let eta = null;
+      const first = s.samples[0], last = s.samples[s.samples.length - 1];
+      const dt = (last.t - first.t) / 1000;
+      if (dt >= 1.5) {
+        const rate = (last.len - first.len) / dt;
+        const closing = rate - (playing ? 1 : 0);
+        if (closing > 0.05) eta = Math.max(0, required - bufLen) / closing;
+        if (eta !== null && eta > 300) eta = null;
+      }
+
+      const slow = playing && !s.pausedByUs && s.progress < 0.9 &&
+                   now - s.startedAt > 10000 && (eta === null || eta > 40);
+      paintHud(s, eta, slow);
+    }
+
+    /* Hand-off. The standby seeks to a point just *ahead* of the playhead
+       (far enough to cover however long a seek takes here) while the current
+       video keeps playing. When the playhead reaches that point, the two swap
+       on the same frame — no freeze, no restart. */
+    function commitSwitch(s) {
+      if (switching !== s || s.committing) return;
+      s.committing = true;
+      window.clearInterval(s.timer);
+      handOver(s, 0);
+    }
+
+    function handOver(s, attempt) {
+      if (switching !== s) return;
+      const old = el, next = s.video;
+      const playing = !old.paused && !old.ended;
+      const lead = playing ? Math.min(0.5 + ((s.seekMs || 600) / 1000) * 1.4 + attempt * 0.8, 5) : 0;
+      const T = Math.max(0, Math.min(old.currentTime + lead, (next.duration || 1e9) - 0.05));
+      const t0 = performance.now();
+
+      window.clearTimeout(s.guard);
+      s.guard = window.setTimeout(() => { if (switching === s) failSwitch(s); }, 10000);
+
+      function ready() {
+        window.clearTimeout(s.guard);
+        s.seekMs = performance.now() - t0;
+        rendezvous(s, T, attempt);
+      }
+      if (!next.seeking && Math.abs(next.currentTime - T) < 0.05 && next.readyState >= 3) {
+        ready();
+      } else {
+        next.addEventListener('seeked', ready, { once: true });
+        try { next.currentTime = T; } catch (err) { failSwitch(s); }
+      }
+    }
+
+    function rendezvous(s, T, attempt) {
+      const next = s.video;
+      window.clearInterval(s.poll);
+
+      function check() {
+        if (switching !== s) { window.clearInterval(s.poll); return; }
+        const now = el.currentTime;
+        const playing = !el.paused && !el.ended;
+
+        if (!playing) {
+          // paused (by the viewer, or by us): swap at the exact paused frame
+          window.clearInterval(s.poll);
+          if (Math.abs(next.currentTime - now) < 0.1) finishSwitch(s, s.pausedByUs);
+          else handOver(s, attempt);
+          return;
+        }
+        if (now >= T - 0.05) {
+          window.clearInterval(s.poll);
+          // seek took longer than planned and the playhead overshot: aim further out
+          if (now - T > 0.25 && attempt < 3) handOver(s, attempt + 1);
+          else finishSwitch(s, true);
+        }
+      }
+      s.poll = window.setInterval(check, 25);
+      check();
+    }
+
+    function finishSwitch(s, resume) {
+      const old = el, next = s.video;
+      window.clearInterval(s.poll);
+      window.clearTimeout(s.guard);
+
+      swapping = true;
+      next.volume = old.volume;
+      next.muted = old.muted;
+      next.classList.remove('cp-video--standby');
+      next.removeAttribute('aria-hidden');
+      el = next;
+      mode = s.target;
+      switching = null;
+      if (resume) play();          // start the new one first, then drop the old
+      disposeVideo(old);
+      swapping = false;
+
+      hideHud();
+      stopBuffering();
+      flash();
+      setQualityUi(mode);
+      updateChip();
+      updateDuration(); updateProgress(); updateBuffered(); syncMute(); syncPlayState();
+      showControls();
+    }
+
+    // A quick shutter flash to hide the swap and mark the moment.
+    function flash() {
+      wrap.classList.remove('is-flash');
+      void wrap.offsetWidth;
+      wrap.classList.add('is-flash');
+      chip.classList.add('is-pop');
+      window.clearTimeout(flashTimer);
+      flashTimer = window.setTimeout(() => {
+        wrap.classList.remove('is-flash');
+        chip.classList.remove('is-pop');
+      }, 700);
+    }
+
+    /* Disclaimer step ------------------------------------------------- */
+    function openConfirm() {
+      if (!fullInfo || switching || mode === 'full') return;
+      const sizeEl = $('.cp-confirm-size', wrap);
+      sizeEl.textContent = fullInfo.size ? ' Original file size: about ' + fullInfo.size + '.' : '';
+      confirmEl.hidden = false;
+      showControls(true);
+      confirmGo.focus();
+    }
+    function closeConfirm() {
+      if (confirmEl.hidden) return false;
+      confirmEl.hidden = true;
+      return true;
+    }
+    confirmGo.addEventListener('click', () => { closeConfirm(); startSwitch('full'); });
+    confirmNo.addEventListener('click', closeConfirm);
+
+    chip.addEventListener('click', () => {
+      if (switching) return;
+      if (mode === 'full') startSwitch('preview'); else openConfirm();
+    });
+    hudCancel.addEventListener('click', () => cancelSwitch(switching));
+    hudPause.addEventListener('click', () => {
+      if (!switching) return;
+      switching.pausedByUs = true;
+      el.pause();
+      paintHud(switching, null, false);
+    });
+    spinFallback.addEventListener('click', () => { stopBuffering(); startSwitch('preview'); });
+
+    /* Public handle for the note under the title + keyboard shortcuts --- */
+    activePlayer = {
+      hasFull: !!fullInfo,
+      video: () => el,
+      act(action) {
+        if (action === 'full') openConfirm();
+        else if (action === 'preview') startSwitch('preview');
+        else if (action === 'cancel') cancelSwitch(switching);
+      },
+      closeConfirm: closeConfirm,
+      toggleMute: toggleMute,
+      nudgeVolume: nudgeVolume,
+      destroy() {
+        if (switching) { window.clearInterval(switching.timer); switching = null; }
+        window.clearTimeout(hideTimer);
+        window.clearTimeout(slowTimer);
+        window.clearTimeout(fallbackTimer);
+        window.clearTimeout(flashTimer);
+        $$('video', wrap).forEach(v => { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (err) {} });
+      }
+    };
+
+    bindMedia(el);
+    updateChip();
+  }
+
 async function setVideo(url){
   url = url.trim(); if(!url) return;
   videoUrl = url;
-  const box = $("#player"); box.innerHTML = ""; $("#playerHint").textContent = "";
+  dropPlayer(); stageToken++;
+  const box = $("#player"); box.innerHTML = ""; box.classList.remove("ratio"); box.style.removeProperty("--ratio"); $("#playerHint").textContent = "";
   api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
 
   const yt = ytId(url), vm = vimeoParts(url);
@@ -284,13 +1637,11 @@ async function setVideo(url){
       const f=document.createElement("iframe"); f.src=info.src; f.allow="autoplay; fullscreen; picture-in-picture"; f.allowFullscreen=true; box.appendChild(f);
       $("#playerHint").textContent = "This site does not share the playing time. Read the time from the player and type it in the time box.";
     } else if(info.kind==="file"){
-      const v=document.createElement("video"); v.src=info.src; v.controls=true; v.playsInline=true; v.preload="metadata"; box.appendChild(v);
-      v.addEventListener("error",()=>{
-        box.innerHTML='<div class="empty">This link would not play here.</div>';
-        api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
-        const h=$("#playerHint"); h.textContent="Open the video in a new tab: "; const a=document.createElement("a"); a.href=info.original; a.target="_blank"; a.rel="noopener"; a.textContent="open link"; h.appendChild(a); h.append(". Type the time yourself.");
-      });
-      api = {canTime:true, getTime:async()=>v.currentTime, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, pause:()=>v.pause()};
+      box.classList.add("ratio"); setStageRatio(16/9);
+      const wrap=createCustomPlayer(info, stageToken);
+      box.appendChild(wrap);
+      const vid=$(".cp-video",wrap);
+      api = {canTime:true, getTime:async()=>vid.currentTime, seek:t=>{vid.currentTime=t;vid.play().catch(()=>{})}, pause:()=>vid.pause()};
     } else {
       box.innerHTML='<div class="empty">This link is an image, not a video.</div>';
       return;
