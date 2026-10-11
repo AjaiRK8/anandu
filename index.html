@@ -199,7 +199,6 @@ if(!CONFIG.editorEmail || CONFIG.editorEmail==="you@example.com") { /* keep butt
 /* ---------- video loading ---------- */
 function ytId(u){ const m=u.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/); return m&&m[1]; }
 function vimeoParts(u){ const m=u.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([a-f0-9]+))?/); return m&&{id:m[1],h:m[2]}; }
-function driveId(u){ const m=u.match(/drive\.google\.com\/file\/d\/([\w-]+)/); return m&&m[1]; }
 
 let ytReady = null;
 function loadYT(){ if(ytReady) return ytReady;
@@ -213,13 +212,60 @@ function loadVimeo(){ if(vimeoReady) return vimeoReady;
     const s=document.createElement("script"); s.src="https://player.vimeo.com/api/player.js"; s.onload=res; document.head.appendChild(s); });
   return vimeoReady; }
 
+
+/* ---- any-link parser (from your portfolio site) ---- */
+function mkVid(kind, src, original){ return {kind:kind, src:src, original:original||src}; }
+function addParam(url, param){
+  if(new RegExp('[?&]'+param.split('=')[0]+'=').test(url)) return url;
+  return url+(url.indexOf('?')===-1?'?':'&')+param;
+}
+function dropboxRaw(url){
+  if(!url||!/dropbox\.com\//.test(url)) return url;
+  return addParam(url.replace(/[?&]dl=[01]\b/g,''),'raw=1');
+}
+function onedriveDirect(url){
+  let b64; try{ b64=btoa(unescape(encodeURIComponent(url))); }catch(e){ return null; }
+  return 'https://api.onedrive.com/v1.0/shares/u!'+b64.replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_')+'/root/content';
+}
+function parseVideo(url){
+  if(!url) return null; url=String(url).trim(); if(!url) return null;
+  const ig=url.match(/instagram\.com\/(?:[\w.]+\/)?(p|reel|reels|tv)\/([\w-]+)/);
+  if(ig) return mkVid('iframe','https://www.instagram.com/'+(ig[1]==='reels'?'reel':ig[1])+'/'+ig[2]+'/embed/captioned/',url);
+  if(/(?:facebook\.com\/(?:watch\/?\?|.*\/videos\/)|fb\.watch\/)/.test(url))
+    return mkVid('iframe','https://www.facebook.com/plugins/video.php?href='+encodeURIComponent(url)+'&show_text=false',url);
+  const dm=url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/);
+  if(dm) return mkVid('iframe','https://www.dailymotion.com/embed/video/'+dm[1],url);
+  const lo=url.match(/loom\.com\/(?:share|embed)\/([\w-]+)/);
+  if(lo) return mkVid('iframe','https://www.loom.com/embed/'+lo[1],url);
+  const st=url.match(/streamable\.com\/(?:e\/)?([\w-]+)/);
+  if(st) return mkVid('iframe','https://streamable.com/e/'+st[1],url);
+  const wi=url.match(/(?:wistia\.com|wi\.st)\/(?:medias|embed\/medias)\/([\w-]+)/);
+  if(wi) return mkVid('iframe','https://fast.wistia.net/embed/iframe/'+wi[1],url);
+  const gd=url.match(/drive\.google\.com\/(?:file\/d\/|open\?(?:.*&)?id=|uc\?(?:.*&)?id=)([\w-]{20,})/);
+  if(gd) return mkVid('iframe','https://drive.google.com/file/d/'+gd[1]+'/preview',url);
+  if(/dropbox\.com\/(scl\/|s\/)/.test(url)){ const r=dropboxRaw(url); return mkVid('file',r,r); }
+  if(/(?:1drv\.ms\/|onedrive\.live\.com\/)/.test(url)){
+    const d=onedriveDirect(url); if(d) return mkVid('file',d,url);
+    return mkVid('iframe',url.replace('/redir?','/embed?'),url);
+  }
+  if(/sharepoint\.com\//.test(url)) return mkVid('iframe',addParam(url,'action=embedview'),url);
+  const bx=url.match(/app\.box\.com\/(?:s|shared)\/([\w!.-]+)/);
+  if(bx) return mkVid('iframe','https://app.box.com/embed/s/'+bx[1]+'?showParentPath=false',url);
+  const mg=url.match(/mega\.nz\/(?:file|embed)\/([\w-]+#[\w-]+)/);
+  if(mg) return mkVid('iframe','https://mega.nz/embed/'+mg[1]+'!1!0',url);
+  const pc=url.match(/pcloud\.(?:com|link)\/publink\/show\?code=([\w]+)/);
+  if(pc) return mkVid('iframe','https://e.pcloud.link/publink/show?code='+pc[1],url);
+  if(/\.(jpe?g|png|webp|avif|gif|svg)(\?.*)?$/i.test(url)) return mkVid('image',url,url);
+  return mkVid('file',url,url);   // direct file or unknown host: try as video
+}
+
 async function setVideo(url){
   url = url.trim(); if(!url) return;
   videoUrl = url;
   const box = $("#player"); box.innerHTML = ""; $("#playerHint").textContent = "";
   api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
 
-  const yt = ytId(url), vm = vimeoParts(url), dr = driveId(url);
+  const yt = ytId(url), vm = vimeoParts(url);
   if(yt){
     if(location.protocol==="file:") $("#playerHint").textContent = "Error 153? YouTube blocks players on files opened from your computer. It works once the site is on GitHub Pages, or run: python -m http.server, then open http://localhost:8000.";
     box.innerHTML = '<div id="ytbox"></div>';
@@ -232,15 +278,23 @@ async function setVideo(url){
     box.appendChild(f); await loadVimeo();
     const p = new Vimeo.Player(f);
     api = {canTime:true, getTime:()=>p.getCurrentTime(), seek:t=>{p.setCurrentTime(t).then(()=>p.play()).catch(()=>{})}, pause:()=>{p.pause().catch(()=>{})}};
-  } else if(dr){
-    const f=document.createElement("iframe"); f.src="https://drive.google.com/file/d/"+dr+"/preview"; f.allow="autoplay; fullscreen"; f.allowFullscreen=true; box.appendChild(f);
-    $("#playerHint").textContent = "Google Drive does not share the playing time. Read the time from the player and type it in the time box.";
-  } else if(/\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url)){
-    const v=document.createElement("video"); v.src=url; v.controls=true; v.playsInline=true; box.appendChild(v);
-    api = {canTime:true, getTime:async()=>v.currentTime, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, pause:()=>v.pause()};
   } else {
-    box.innerHTML='<div class="empty">This link type is not supported. Use YouTube, Vimeo, Google Drive or a direct .mp4 link.</div>';
-    return;
+    const info=parseVideo(url);
+    if(info.kind==="iframe"){
+      const f=document.createElement("iframe"); f.src=info.src; f.allow="autoplay; fullscreen; picture-in-picture"; f.allowFullscreen=true; box.appendChild(f);
+      $("#playerHint").textContent = "This site does not share the playing time. Read the time from the player and type it in the time box.";
+    } else if(info.kind==="file"){
+      const v=document.createElement("video"); v.src=info.src; v.controls=true; v.playsInline=true; v.preload="metadata"; box.appendChild(v);
+      v.addEventListener("error",()=>{
+        box.innerHTML='<div class="empty">This link would not play here.</div>';
+        api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
+        const h=$("#playerHint"); h.textContent="Open the video in a new tab: "; const a=document.createElement("a"); a.href=info.original; a.target="_blank"; a.rel="noopener"; a.textContent="open link"; h.appendChild(a); h.append(". Type the time yourself.");
+      });
+      api = {canTime:true, getTime:async()=>v.currentTime, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, pause:()=>v.pause()};
+    } else {
+      box.innerHTML='<div class="empty">This link is an image, not a video.</div>';
+      return;
+    }
   }
   const saved = load();
   state = saved || {client:params.get("client")||"",version:params.get("version")||"",general:"",items:[]};
