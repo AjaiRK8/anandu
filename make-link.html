@@ -56,10 +56,6 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
       <label for="version">Version (optional)</label>
       <input id="version" type="text" placeholder="V1">
     </div>
-    <div class="field">
-      <label class="chk"><input type="checkbox" id="free"> Let client change the video link</label>
-      <p class="hint">Off: the video box is hidden and the client can only review this video.</p>
-    </div>
   </div>
 
   <div class="card" style="margin-top:16px">
@@ -101,7 +97,6 @@ function build(){
   [["project","project"],["version","version"],["client","client"]].forEach(([id,k])=>{
     const x=$("#"+id).value.trim(); if(x) q.set(k,x);
   });
-  if($("#free").checked) q.set("free","1");
   return base+"?"+q.toString();
 }
 function update(){
@@ -121,7 +116,7 @@ $("#copy").onclick=()=>{const l=need();if(l)copy(l,"Link copied.")};
 $("#copyMsg").onclick=()=>{const l=need();if(l)copy(msg(l),"Message copied.")};
 $("#open").onclick=()=>{const l=need();if(l)window.open(l,"_blank","noopener")};
 $("#wa").onclick=()=>{const l=need();if(l)window.open("https://wa.me/?text="+encodeURIComponent(msg(l)),"_blank","noopener")};
-ids.concat("free").forEach(i=>$("#"+i).addEventListener("input",update));
+ids.forEach(i=>$("#"+i).addEventListener("input",update));
 update();
 </script>
 </body>

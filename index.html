@@ -87,11 +87,7 @@ button.small{padding:4px 9px;font-size:.82rem}
   <!-- LEFT: player + add note -->
   <div>
     <div class="card">
-      <div class="linkbar">
-        <input id="videoUrl" type="url" placeholder="Paste video link (YouTube, Vimeo, Google Drive, or .mp4)" aria-label="Video link">
-        <button id="loadBtn" class="primary">Load video</button>
-      </div>
-      <div class="player" id="player"><div class="empty">Paste the video link above to start reviewing.</div></div>
+      <div class="player" id="player"><div class="empty">No video loaded. Open the review link your editor sent you.</div></div>
       <p class="hint" id="playerHint"></p>
     </div>
 
@@ -144,6 +140,7 @@ button.small{padding:4px 9px;font-size:.82rem}
         <button id="sendForm" class="primary" hidden>Send feedback</button>
         <button id="sendMail" class="primary">Send by email</button>
         <button id="sendWa">Send on WhatsApp</button>
+        <button id="sendGrp" hidden>Copy and open group</button>
         <button id="copyBtn">Copy text</button>
         <button id="dlBtn">Download .txt</button>
       </div>
@@ -159,7 +156,8 @@ button.small{padding:4px 9px;font-size:.82rem}
 const CONFIG = {
   editorName: "Your Name",
   editorEmail: "you@example.com",
-  whatsapp: "",            // digits only with country code, e.g. "919876543210". Leave "" to hide.
+  whatsapp: "",            // your number, digits only with country code, e.g. "919876543210". Leave "" and client picks the chat or group.
+  whatsappGroup: "",       // optional group invite link, e.g. "https://chat.whatsapp.com/XXXX". Adds a "Copy and open group" button.
   formEndpoint: "",        // optional Formspree URL, e.g. "https://formspree.io/f/xxxxxxx". Leave "" to hide.
   projectTitle: "Video review",
   defaultVideo: ""         // optional default link
@@ -194,7 +192,7 @@ $("#title").textContent = title; document.title = title;
 $("#by").textContent = CONFIG.editorName ? "Edited by "+CONFIG.editorName : "";
 $("#cats").innerHTML = CATS.map((c,i)=>`<input type="radio" name="cat" id="c${i}" value="${c}" ${i===0?"checked":""}><label for="c${i}">${c}</label>`).join("");
 $("#pris").innerHTML = PRIS.map((p,i)=>`<input type="radio" name="pri" id="p${i}" value="${p[0]}" ${i===0?"checked":""}><label for="p${i}">${p[1]}</label>`).join("");
-if(!CONFIG.whatsapp) $("#sendWa").hidden = true;
+if(CONFIG.whatsappGroup) $("#sendGrp").hidden = false;
 if(CONFIG.formEndpoint) $("#sendForm").hidden = false;
 if(!CONFIG.editorEmail || CONFIG.editorEmail==="you@example.com") { /* keep button, will warn */ }
 
@@ -217,7 +215,7 @@ function loadVimeo(){ if(vimeoReady) return vimeoReady;
 
 async function setVideo(url){
   url = url.trim(); if(!url) return;
-  videoUrl = url; $("#videoUrl").value = url;
+  videoUrl = url;
   const box = $("#player"); box.innerHTML = ""; $("#playerHint").textContent = "";
   api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
 
@@ -322,7 +320,10 @@ $("#sendMail").onclick=()=>{ if(!ready())return;
   if(url.length>1900){ navigator.clipboard&&navigator.clipboard.writeText(body); say("List is long. It was copied. Paste it into the email that opens.");}
   else say("Opening your email app.");
   location.href=url; };
-$("#sendWa").onclick=()=>{ if(!ready())return; window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(buildText())}`,"_blank","noopener"); };
+$("#sendWa").onclick=()=>{ if(!ready())return; window.open(`https://wa.me/${CONFIG.whatsapp||""}?text=${encodeURIComponent(buildText())}`,"_blank","noopener"); };
+$("#sendGrp").onclick=async()=>{ if(!ready())return;
+  try{ await navigator.clipboard.writeText(buildText()); say("Copied. Paste it in the group chat."); }catch(e){ say("Copy blocked. Use Copy text, then open the group.",true);}
+  window.open(CONFIG.whatsappGroup,"_blank","noopener"); };
 $("#copyBtn").onclick=async()=>{ if(!ready())return;
   try{ await navigator.clipboard.writeText(buildText()); say("Copied. Paste it anywhere."); }catch(e){ say("Copy blocked by browser. Use Download .txt.",true);} };
 $("#dlBtn").onclick=()=>{ if(!ready())return;
@@ -336,13 +337,10 @@ $("#sendForm").onclick=async()=>{ if(!ready())return; say("Sending...");
 /* ---------- fields ---------- */
 function syncFields(){ $("#client").value=state.client||""; $("#version").value=state.version||""; $("#general").value=state.general||""; }
 ["client","version","general"].forEach(k=>$("#"+k).addEventListener("input",e=>{ state[k]=e.target.value; save(); }));
-$("#loadBtn").onclick=()=>setVideo($("#videoUrl").value);
-$("#videoUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") setVideo($("#videoUrl").value); });
 
 /* ---------- start ---------- */
 const start = params.get("video")||CONFIG.defaultVideo;
 if(start) setVideo(start); else { syncFields(); render(); }
-if(params.get("video") && params.get("free")!=="1") document.querySelector(".linkbar").hidden = true;
 </script>
 </body>
 </html>
