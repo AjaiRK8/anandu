@@ -341,6 +341,7 @@ $("#videoUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") setVideo($("#
 /* ---------- start ---------- */
 const start = params.get("video")||CONFIG.defaultVideo;
 if(start) setVideo(start); else { syncFields(); render(); }
+if(params.get("video") && params.get("free")!=="1") document.querySelector(".linkbar").hidden = true;
 </script>
 </body>
 </html>
