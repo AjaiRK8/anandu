@@ -50,13 +50,13 @@ button.primary:hover{background:var(--accent-hover);border-color:var(--accent-ho
 .hint{color:var(--muted);font-size:.8rem;margin:8px 0 0}
 .hint a{color:var(--accent)}
 .wrap{max-width:1440px;margin:0 auto;padding:24px 16px 60px}
-.grid{display:grid;grid-template-columns:minmax(0,calc(var(--pw,60)*1%)) minmax(0,1fr);gap:20px;align-items:start}
+.grid{display:grid;grid-template-columns:minmax(0,60%) minmax(0,1fr);gap:20px;align-items:start}
 .card+.card{margin-top:20px}
 @media (max-width:900px){
   .grid{display:flex;flex-direction:column;align-items:stretch;gap:16px}
   .col{display:contents}
   .card+.card{margin-top:0}
-  #playerCard{order:1;align-self:center;width:calc(var(--pw,100)*1%);position:sticky;top:env(safe-area-inset-top,0px);z-index:5} #addCard{order:2} #listCard{order:3} #sendCard{order:4}
+  #playerCard{order:1;align-self:stretch;position:sticky;top:env(safe-area-inset-top,0px);z-index:5} #addCard{order:2} #listCard{order:3} #sendCard{order:4}
 }
 .card.mon{padding:0;overflow:hidden}
 .mon .hint{padding:0 16px 14px;margin:0}
@@ -127,13 +127,7 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
 /* ---- review upgrades ---- */
 .card.mon{position:relative}
 .player{max-height:82vh}
-.grid.stack{display:flex;flex-direction:column;align-items:stretch;gap:16px}
-.grid.stack .col{display:contents}
-.grid.stack .card+.card{margin-top:0}
-.grid.stack #playerCard{order:1;align-self:flex-start;width:calc(var(--pw,60)*1%)}
-.grid.stack #addCard{order:2} .grid.stack #listCard{order:3} .grid.stack #sendCard{order:4}
-.grid.stack #addCard,.grid.stack #listCard,.grid.stack #sendCard{align-self:flex-start;width:min(100%,820px)}
-@media (max-width:900px){.player{max-height:45vh}}
+@media (max-width:900px){.player:not(.portrait){max-height:45vh}}
 @media (max-width:900px) and (max-height:520px){#playerCard{position:static}}
 .dim{color:var(--muted);font-size:.8rem;margin:0}
 .pbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px 0}
@@ -144,9 +138,6 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
 .popts label{display:flex;align-items:center;gap:8px;margin:0;color:var(--muted)}
 .popts select{width:auto;padding:5px 8px}
 .popts input[type=range]{width:150px;padding:0;border:0;background:transparent;accent-color:var(--accent)}
-.grip{position:absolute;right:0;bottom:0;width:26px;height:26px;cursor:ew-resize;touch-action:none;z-index:3;opacity:.55;
-  background:linear-gradient(135deg,transparent 0 52%,var(--muted) 52% 58%,transparent 58% 70%,var(--muted) 70% 76%,transparent 76% 88%,var(--muted) 88% 94%,transparent 94%)}
-.grip:hover,.grip:focus-visible{opacity:1}
 .tl{position:relative;height:28px;margin:8px 16px 0}
 .tl-line{position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--line-strong)}
 .tl-play{position:absolute;top:3px;bottom:3px;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;left:0}
@@ -154,7 +145,7 @@ button.mk{position:absolute;top:50%;width:14px;height:14px;min-height:0;padding:
 button.mk:hover{background:#ffd27a;border-color:var(--panel)}
 button.mk.must,button.mk.must:hover{background:var(--bad)}
 button.mk.span{border-radius:4px;height:12px;min-width:10px;transform:translateY(-50%)}
-@media (pointer:coarse){button.mk{width:22px;height:22px}button.mk.span{height:16px}.grip{width:34px;height:34px}}
+@media (pointer:coarse){button.mk{width:22px;height:22px}button.mk.span{height:16px}}
 .timerow{flex-wrap:wrap}
 .nudge{padding:9px 10px;min-width:50px}
 .endrow{margin-top:12px}
@@ -168,6 +159,22 @@ button.rec{background:rgba(255,123,112,.16);border-color:var(--bad);color:var(--
 .ov-tools button.tool.on,.ov-tools button.wt.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 #ovText{width:190px;padding:6px 9px}
 
+/* ---- shape + hide player ---- */
+.player{margin:0 auto;max-width:100%}
+.player.portrait{aspect-ratio:var(--ar,9/16);height:78vh;max-height:none;width:auto}
+.player:not(.portrait){aspect-ratio:var(--ar,16/9)}
+.grid.portrait{grid-template-columns:minmax(0,38%) minmax(0,1fr)}
+.pshow{display:flex;justify-content:flex-end;padding:6px 10px 0}
+.pshow button{padding:3px 10px;min-height:0;font-size:.8rem}
+body.noplayer #player,body.noplayer #tl,body.noplayer #pbar,body.noplayer #popts,body.noplayer #playerHint{display:none!important}
+body.noplayer .pshow{padding:6px 10px}
+@media (max-width:900px){
+  .grid.portrait{grid-template-columns:none}
+  .player.portrait{height:50vh}
+  body.typing .player.portrait{height:30vh}
+}
+@media (max-width:900px) and (max-height:520px){.player.portrait{height:70vh}}
+
 /* ---- mobile-first upgrades ---- */
 button{touch-action:manipulation}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -177,7 +184,7 @@ button{touch-action:manipulation}
   background:var(--raised);border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:10px 14px;font-size:.9rem;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none}
 .toast.err{border-color:var(--bad)}
 @media (max-width:900px){
-  body.typing #playerCard .pbar,body.typing #playerCard .popts,body.typing #playerCard .hint,body.typing #playerCard .grip{display:none!important}
+  body.typing #playerCard .pbar,body.typing #playerCard .popts,body.typing #playerCard .hint{display:none!important}
   body.typing .player{max-height:30vh}
 }
 @media (max-width:600px){.pbar button{flex:1 1 45%}}
@@ -259,6 +266,7 @@ button{touch-action:manipulation}
   <!-- LEFT: player + list -->
   <div class="col">
     <div class="card mon" id="playerCard">
+      <div class="pshow"><button type="button" class="small" id="hideBtn" aria-pressed="false">Hide player</button></div>
       <div class="player" id="player"><div class="empty">No video loaded. Open the review link your editor sent you.</div></div>
       <div class="tl" id="tl" hidden aria-label="Your notes on the timeline"><div class="tl-line"></div><div class="tl-play" id="tlPlay"></div><div id="tlMarks"></div></div>
       <div class="pbar" id="pbar" hidden>
@@ -269,13 +277,11 @@ button{touch-action:manipulation}
         <summary>Player options</summary>
         <div class="popts-in">
           <label for="backSel">Rewind on Pause and add note <select id="backSel"><option value="0" selected>None</option><option value="2">2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option></select></label>
-          <label for="sizeR">Player size <input type="range" id="sizeR" min="40" max="100" step="1"></label>
-          <button type="button" class="small" id="sizeReset">Reset size</button>
+          <label for="shapeSel">Video shape <select id="shapeSel"><option value="auto" selected>Auto</option><option value="land">Landscape</option><option value="port">Portrait</option></select></label>
         </div>
-        <p class="dim">You can also drag the corner of the player. Above 70% the form moves below the video.</p>
+        <p class="dim">Auto reads the video shape when it can. YouTube does not share it, so pick Portrait if the video is tall.</p>
       </details>
       <p class="hint" id="playerHint"></p>
-      <div class="grip" id="grip" role="slider" tabindex="0" aria-label="Player size" aria-valuemin="40" aria-valuemax="100" aria-valuenow="60" title="Drag to resize. Double-click to reset."></div>
     </div>
 
     <div class="card" id="listCard">
@@ -562,6 +568,7 @@ function mountFile(info){
   const altCand = /dropbox\.com\//.test(info.src) ? info.src.replace("www.dropbox.com","dl.dropboxusercontent.com").replace(/[?&]raw=1/,"").replace(/[?&]dl=[01]/,"").replace(/\?&/,"?") : null;
   const alt = altCand && altCand!==info.src ? altCand : null;
   const v=document.createElement("video"); if(cors) v.crossOrigin="anonymous"; v.src=info.src; v.controls=true; v.playsInline=true; v.preload="metadata"; box.appendChild(v);
+  v.addEventListener("loadedmetadata",()=>setAR(v.videoWidth,v.videoHeight));
   const capSrcs=()=>{ const l=[info.src]; if(alt) l.push(alt); return l; };
   if(!cors) v.addEventListener("loadedmetadata",()=>{ setTimeout(()=>prepCap(capSrcs()),400); },{once:true});
   api = mkApi({canTime:true, getTime:async()=>v.currentTime, getDur:async()=>isFinite(v.duration)?v.duration:0, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, seekTo:t=>{v.currentTime=t;v.pause()}, pause:()=>v.pause(),
@@ -587,7 +594,7 @@ function mountFile(info){
 
 async function setVideo(url){
   url = url.trim(); if(!url) return;
-  videoUrl = url; dur = 0;
+  videoUrl = url; dur = 0; autoAR = /youtube\.com\/shorts\//.test(url) ? 9/16 : null; applyShape();
   const box = $("#player"); box.innerHTML = ""; $("#playerHint").textContent = "";
   api = mkApi({});
 
@@ -603,6 +610,7 @@ async function setVideo(url){
     f.src="https://player.vimeo.com/video/"+vm.id+(vm.h?"?h="+vm.h:""); f.allow="autoplay; fullscreen; picture-in-picture"; f.allowFullscreen=true;
     box.appendChild(f); await loadVimeo();
     const p = new Vimeo.Player(f);
+    Promise.all([p.getVideoWidth(),p.getVideoHeight()]).then(r=>setAR(r[0],r[1])).catch(()=>{});
     api = mkApi({canTime:true, getTime:()=>p.getCurrentTime(), getDur:()=>p.getDuration(), seek:t=>{p.setCurrentTime(t).then(()=>p.play()).catch(()=>{})}, seekTo:t=>{p.setCurrentTime(t).then(()=>p.pause()).catch(()=>{})}, pause:()=>{p.pause().catch(()=>{})}});
   } else {
     const info=parseVideo(url);
@@ -1023,35 +1031,34 @@ function renderMarks(){
   });
 }
 
-/* ---------- resizable player ---------- */
+/* ---------- video shape + hide player ---------- */
 const gridEl=document.querySelector(".grid"), mq=window.matchMedia("(max-width:900px)");
-let pw=60, gripDrag=false, gripOff=0;
-const sizeKey=()=>"fb:psize:"+(mq.matches?"m":"d");
-const sizeDefault=()=>mq.matches?100:60;
-function applySize(v,persist){
-  pw=Math.max(40,Math.min(100,Math.round(v)));
-  gridEl.style.setProperty("--pw",pw);
-  gridEl.classList.toggle("stack",!mq.matches && pw>70);
-  $("#sizeR").value=pw; $("#grip").setAttribute("aria-valuenow",pw);
-  if(persist){ try{ localStorage.setItem(sizeKey(),String(pw)); }catch(e){} }
+const shapeKey=()=>"fb:shape:"+(videoUrl||"none"), hideKey="fb:phide";
+let autoAR=null;   // width/height read from the video, or null if unknown
+function applyShape(){
+  let mode="auto"; try{ mode=localStorage.getItem(shapeKey())||"auto"; }catch(e){}
+  $("#shapeSel").value=mode;
+  const ar = mode==="land" ? 16/9 : mode==="port" ? 9/16 : autoAR;
+  const portrait = ar!=null && ar<0.9, pl=$("#player");
+  pl.classList.toggle("portrait",portrait); gridEl.classList.toggle("portrait",portrait);
+  if(ar!=null) pl.style.setProperty("--ar",ar.toFixed(4)); else pl.style.removeProperty("--ar");
 }
-function loadSize(){
-  let v=sizeDefault();
-  try{ const x=parseFloat(localStorage.getItem(sizeKey())); if(x>=40&&x<=100) v=x; }catch(e){}
-  applySize(v,false); $("#popts").open=!mq.matches;
+function setAR(w,h){ if(w>0&&h>0){ autoAR=w/h; applyShape(); } }
+$("#shapeSel").addEventListener("change",e=>{ try{ localStorage.setItem(shapeKey(),e.target.value); }catch(x){} applyShape(); });
+function setHidden(h,persist){
+  document.body.classList.toggle("noplayer",h);
+  const b=$("#hideBtn"); b.textContent=h?"Show player":"Hide player"; b.setAttribute("aria-pressed",h);
+  if(h){ try{ api.pause(); }catch(e){} }
+  if(persist){ try{ localStorage.setItem(hideKey,h?"1":"0"); }catch(e){} }
 }
+$("#hideBtn").onclick=()=>setHidden(!document.body.classList.contains("noplayer"),true);
+// jumping to a time or capturing a frame needs the player: show it
+$("#list").addEventListener("click",e=>{ if(e.target.closest(".ts")) setHidden(false,false); });
+$("#tlMarks").addEventListener("click",()=>setHidden(false,false));
+$("#capBtn").addEventListener("click",()=>setHidden(false,false),true);
+function loadSize(){ $("#popts").open=!mq.matches; }
 if(mq.addEventListener) mq.addEventListener("change",loadSize); else mq.addListener(loadSize);
-const gr=$("#grip");
-gr.addEventListener("pointerdown",e=>{ gr.setPointerCapture(e.pointerId); gripDrag=true; gripOff=$("#playerCard").getBoundingClientRect().right-e.clientX; e.preventDefault(); });
-gr.addEventListener("pointermove",e=>{ if(!gripDrag) return;
-  const r=gridEl.getBoundingClientRect(), x=e.clientX+gripOff;
-  applySize(mq.matches ? 2*(x-(r.left+r.width/2))/r.width*100 : (x-r.left)/r.width*100, false); });
-const endDrag=()=>{ if(gripDrag){ gripDrag=false; applySize(pw,true); } };
-gr.addEventListener("pointerup",endDrag); gr.addEventListener("pointercancel",endDrag);
-gr.addEventListener("keydown",e=>{ const k={ArrowRight:2,ArrowUp:2,ArrowLeft:-2,ArrowDown:-2}[e.key]; if(k){ e.preventDefault(); applySize(pw+k,true); } });
-gr.addEventListener("dblclick",()=>applySize(sizeDefault(),true));
-$("#sizeR").addEventListener("input",e=>applySize(+e.target.value,true));
-$("#sizeReset").onclick=()=>applySize(sizeDefault(),true);
+try{ if(localStorage.getItem(hideKey)==="1") setHidden(true,false); }catch(e){}
 
 /* ---------- voice dictation ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
