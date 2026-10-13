@@ -221,6 +221,8 @@ button{touch-action:manipulation}
   .timerow input{flex:1 1 100%;min-width:0;max-width:none;width:100%}
   .timerow button{flex:1 1 auto}
 }
+#clearAll{margin-top:10px;color:var(--bad);border-color:var(--line-strong)}
+#clearAll:hover{background:rgba(255,123,112,.12);border-color:var(--bad);color:var(--bad)}
 </style>
 </head>
 <body>
@@ -265,6 +267,7 @@ button{touch-action:manipulation}
     <div class="card" id="listCard">
       <h2>Your changes <span class="count" id="count"></span></h2>
       <ul class="list" id="list"></ul>
+      <button type="button" class="small danger" id="clearAll" hidden>Clear all changes</button>
       <p class="none" id="noneMsg">Nothing yet. Watch the video and add notes as you go.</p>
     </div>
   </div>
@@ -641,7 +644,7 @@ $("#note").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.met
 function render(){
   const items=[...state.items].sort((a,b)=>a.t-b.t);
   $("#count").textContent = items.length?`(${items.length})`:"";
-  $("#noneMsg").hidden = items.length>0;
+  $("#noneMsg").hidden = items.length>0; $("#clearAll").hidden = items.length===0;
   const withImgs = items.some(i=>i.imgs&&i.imgs.length);
   $("#imgNote").hidden = !withImgs;
   $("#sendWa").hidden = withImgs;
@@ -1043,6 +1046,10 @@ const TYPE_SEL="input:not([type=radio]):not([type=file]):not([type=range]),texta
 const inForm=el=>el && el.closest && el.closest("#addCard,#sendCard") && el.matches(TYPE_SEL);
 document.addEventListener("focusin",e=>{ if(mq.matches && inForm(e.target)) document.body.classList.add("typing"); });
 document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(!inForm(document.activeElement)) document.body.classList.remove("typing"); },60); });
+
+$("#clearAll").onclick=()=>{ const n=state.items.length; if(!n) return;
+  if(!confirm("Delete all "+n+" change"+(n>1?"s":"")+" from the list? This cannot be undone.")) return;
+  state.items=[]; save(); render(); say("All changes cleared."); };
 
 /* ---------- start ---------- */
 renderThumbs(); updateCap(); syncSel(); renderChips(); loadSize(); initVoice();
