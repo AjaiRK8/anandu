@@ -166,11 +166,16 @@ button.rec{background:rgba(255,123,112,.16);border-color:var(--bad);color:var(--
 .grid.portrait{grid-template-columns:minmax(0,38%) minmax(0,1fr)}
 .pshow{display:flex;justify-content:flex-end;padding:6px 10px 0}
 .pshow button{padding:3px 10px;min-height:0;font-size:.8rem}
+body.compactp .player:not(.portrait){width:60%}
+.pshow{justify-content:space-between}
+.pshow button.iconbtn{display:inline-flex;align-items:center;gap:6px}
+.pshow svg{width:14px;height:14px;flex:none}
 body.compactp .player.portrait{aspect-ratio:16/9;height:auto;width:100%;max-height:45vh}
 body.compactp .grid.portrait{grid-template-columns:minmax(0,60%) minmax(0,1fr)}
 .player{transition:none}
 body.noplayer #player,body.noplayer #tl,body.noplayer #pbar,body.noplayer #popts,body.noplayer #playerHint{display:none!important}
 body.noplayer .pshow{padding:6px 10px}
+body.noplayer #sizeBtn{display:none}
 @media (max-width:900px){
   .grid.portrait{grid-template-columns:none}
   .player.portrait{height:50vh}
@@ -270,7 +275,7 @@ button{touch-action:manipulation}
   <!-- LEFT: player + list -->
   <div class="col">
     <div class="card mon" id="playerCard">
-      <div class="pshow"><button type="button" class="small" id="hideBtn" aria-pressed="false">Hide player</button></div>
+      <div class="pshow"><button type="button" class="small iconbtn" id="sizeBtn" aria-pressed="false" title="Make player smaller" aria-label="Make player smaller"><svg id="sizeIco" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v4h4M6 14v-4H2M10 6l4-4M6 10l-4 4"/></svg><span id="sizeTxt">Smaller</span></button><button type="button" class="small" id="hideBtn" aria-pressed="false">Hide player</button></div>
       <div class="player" id="player"><div class="empty">No video loaded. Open the review link your editor sent you.</div></div>
       <div class="tl" id="tl" hidden aria-label="Your notes on the timeline"><div class="tl-line"></div><div class="tl-play" id="tlPlay"></div><div id="tlMarks"></div></div>
       <div class="pbar" id="pbar" hidden>
@@ -1065,17 +1070,17 @@ if(mq.addEventListener) mq.addEventListener("change",loadSize); else mq.addListe
 try{ if(localStorage.getItem(hideKey)==="1") setHidden(true,false); }catch(e){}
 
 
-/* scroll up: portrait video shows in a landscape box. scroll down: back to portrait */
-(function(){ let lastY=window.scrollY, lock=0, tick=false;
-  function onScroll(){ tick=false;
-    const y=window.scrollY, d=y-lastY, now=Date.now();
-    if(Math.abs(d)<12 || now<lock) return;
-    lastY=y;
-    const want = d<0;   // up = compact landscape
-    if(want!==document.body.classList.contains("compactp")){ document.body.classList.toggle("compactp",want); lock=now+350; lastY=window.scrollY; }
-  }
-  window.addEventListener("scroll",()=>{ if(!tick){ tick=true; requestAnimationFrame(onScroll); } },{passive:true});
-})();
+/* ---------- smaller / larger player toggle ---------- */
+const smallKey="fb:psmall";
+function setSmall(sm,persist){
+  document.body.classList.toggle("compactp",sm);
+  const b=$("#sizeBtn"), t=sm?"Make player larger":"Make player smaller";
+  b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-pressed",sm); $("#sizeTxt").textContent=sm?"Larger":"Smaller";
+  $("#sizeIco").innerHTML=sm?'<path d="M9 7l5-5M10 2h4v4M7 9l-5 5M6 14H2v-4"/>':'<path d="M14 2l-4 4M10 2v4h4M2 14l4-4M6 14v-4H2"/>';
+  if(persist){ try{ localStorage.setItem(smallKey,sm?"1":"0"); }catch(e){} }
+}
+$("#sizeBtn").onclick=()=>setSmall(!document.body.classList.contains("compactp"),true);
+try{ if(localStorage.getItem(smallKey)==="1") setSmall(true,false); }catch(e){}
 
 /* ---------- voice dictation ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
