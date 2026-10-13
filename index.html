@@ -180,7 +180,7 @@ button{touch-action:manipulation}
   body.typing #playerCard .pbar,body.typing #playerCard .popts,body.typing #playerCard .hint,body.typing #playerCard .grip{display:none!important}
   body.typing .player{max-height:30vh}
 }
-@media (max-width:600px){.pbar button{flex:1 1 45%}#addBtn{width:100%}}
+@media (max-width:600px){.pbar button{flex:1 1 45%}}
 @media (pointer:coarse){
   .kbd-hint{display:none}
   .endrow summary{padding:12px 0}
@@ -227,6 +227,16 @@ button{touch-action:manipulation}
 .tl-play::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--panel)}
 .tl.drag .tl-play::after{width:20px;height:20px;margin:-10px 0 0 -10px}
 @media (pointer:coarse){.tl{height:40px}.tl-play::after{width:18px;height:18px;margin:-9px 0 0 -9px}.tl.drag .tl-play::after{width:24px;height:24px;margin:-12px 0 0 -12px}}
+.addbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+@media (max-width:900px){
+  .addbar{position:sticky;bottom:0;z-index:4;flex-wrap:nowrap;margin:12px -20px -20px;padding:10px 20px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line)}
+  .addbar button{flex:1 1 0;min-width:0}
+}
+@media (max-width:600px){.addbar{margin:12px -14px -14px;padding-left:14px;padding-right:14px}}
+.undo-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;max-width:min(92vw,420px);
+  background:var(--raised);border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:6px 8px 6px 14px;font-size:.9rem;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.undo-toast button{padding:5px 12px;min-height:0;color:var(--accent);border-color:var(--accent);background:transparent}
+@media (max-width:900px){.undo-toast{bottom:calc(env(safe-area-inset-bottom,0px) + 84px)}}
 </style>
 </head>
 <body>
@@ -336,7 +346,10 @@ button{touch-action:manipulation}
         <div class="thumbs" id="thumbs"></div>
         <p class="hint"><span id="capHint"></span>You can also paste or drop images here. New images open in an editor: draw if needed, then save. Tap a saved image to edit it again. Up to 4 per change.</p>
       </div>
-      <button class="primary" id="addBtn">Add to list</button>
+      <div class="addbar">
+        <button class="primary" id="addBtn">Add to list</button>
+        <button type="button" id="addPlayBtn" hidden>Add and resume</button>
+      </div>
       <span class="hint kbd-hint" style="margin-left:8px">Ctrl+Enter also adds.</span>
     </div>
 
@@ -397,6 +410,7 @@ button{touch-action:manipulation}
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="undo-toast" id="undoToast" role="status" hidden><span>Added.</span><button type="button" id="undoBtn">Undo</button></div>
 <script>
 /* ============ EDITOR SETTINGS: change these ============ */
 const CONFIG = {
@@ -612,6 +626,7 @@ async function setVideo(url){
 /* ---------- time follow ---------- */
 let scrub=false, scrubT=0, scrubBusy=false;
 setInterval(async()=>{
+  $("#addPlayBtn").hidden=!api.canTime;
   if(!api.canTime || scrub) return;
   try{
     const t=await api.getTime();
@@ -629,7 +644,8 @@ $("#nowBtn").onclick = async()=>{ dirty=false; if(!api.canTime){say("Cannot read
   const t=await api.getTime(); if(t!=null) $("#time").value=fmt(t); };
 
 /* ---------- items ---------- */
-function addItem(){
+let lastAdded=null, undoTm;
+function addItem(resume){
   const t = parseT($("#time").value);
   const endRaw = $("#timeEnd").value.trim();
   const t2 = endRaw ? parseT(endRaw) : null;
@@ -638,13 +654,25 @@ function addItem(){
   if(endRaw && t2===null){ say("End time must look like 1:40, or leave it empty.",true); $("#timeEnd").focus(); return; }
   if(t2!==null && t2<=t){ say("End time must be after the start time.",true); $("#timeEnd").focus(); return; }
   if(!text){ say("Write what should change.",true); $("#note").focus(); return; }
-  state.items.push({id:Date.now()+Math.random(),t,t2,cat:document.querySelector('input[name=cat]:checked').value,
-    pri:document.querySelector('input[name=pri]:checked').value,text,imgs:pending.slice(),done:false});
-  $("#note").value=""; $("#timeEnd").value=""; resetSel(); dirty=false; pending=[]; renderThumbs(); say("Added."); save(); render();
+  const newIt={id:Date.now()+Math.random(),t,t2,cat:document.querySelector('input[name=cat]:checked').value,
+    pri:document.querySelector('input[name=pri]:checked').value,text,imgs:pending.slice(),done:false};
+  state.items.push(newIt);
+  $("#note").value=""; $("#timeEnd").value=""; resetSel(); dirty=false; pending=[]; renderThumbs(); save(); render(); showUndo(newIt);
+  if(resume===true && api.canTime){ Promise.resolve(api.getTime()).then(c=>{ if(c!=null) api.seek(c); }).catch(()=>{}); }
   if(mq.matches && document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
-$("#addBtn").onclick = addItem;
-$("#note").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)) addItem(); });
+function hideUndo(){ clearTimeout(undoTm); $("#undoToast").hidden=true; }
+function showUndo(it){ lastAdded=it; const u=$("#undoToast"); u.querySelector("span").textContent="Added."; u.hidden=false; clearTimeout(undoTm); undoTm=setTimeout(()=>{ u.hidden=true; },7000); }
+$("#undoBtn").onclick=()=>{ const it=lastAdded; hideUndo(); if(!it) return; const i=state.items.findIndex(x=>x.id===it.id); if(i<0) return;
+  state.items.splice(i,1);
+  $("#time").value=fmt(it.t); $("#timeEnd").value=it.t2!=null?fmt(it.t2):""; if(it.t2!=null) $("#endDet").open=true; dirty=true;
+  $("#note").value=it.text; pending=(it.imgs||[]).slice(); renderThumbs();
+  const c=[...document.querySelectorAll('input[name=cat]')].find(r=>r.value===it.cat); if(c)c.checked=true;
+  const r=[...document.querySelectorAll('input[name=pri]')].find(r=>r.value===it.pri); if(r)r.checked=true; syncSel(); renderChips();
+  save(); render(); say("Removed. Your note is back in the form."); lastAdded=null; };
+$("#addBtn").onclick = ()=>addItem(false);
+$("#addPlayBtn").onclick = ()=>addItem(true);
+$("#note").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)) addItem(false); });
 
 function render(){
   const items=[...state.items].sort((a,b)=>a.t-b.t);
