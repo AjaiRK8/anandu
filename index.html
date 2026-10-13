@@ -26,7 +26,7 @@ html{height:100%;scrollbar-color:var(--line-strong) transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font);-webkit-font-smoothing:antialiased;padding:0 0 env(safe-area-inset-bottom)}
 h1,h2{margin:0;font-family:var(--font)}
 .topbar{background:var(--panel);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
-.topbar-in{max-width:1180px;margin:0 auto;padding:14px 16px;display:flex;gap:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.topbar-in{max-width:1440px;margin:0 auto;padding:14px 16px;display:flex;gap:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .mark{width:32px;height:32px;border-radius:7px;background:var(--accent);position:relative;flex:none}
 .mark::after{content:"";position:absolute;left:12px;top:10px;border-left:11px solid var(--accent-ink);border-top:6px solid transparent;border-bottom:6px solid transparent}
@@ -49,11 +49,15 @@ button.primary{background:var(--accent);color:var(--accent-ink);border-color:var
 button.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
 .hint{color:var(--muted);font-size:.8rem;margin:8px 0 0}
 .hint a{color:var(--accent)}
-.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
-.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr);gap:16px}}
+.wrap{max-width:1440px;margin:0 auto;padding:24px 16px 60px}
+.grid{display:grid;grid-template-columns:minmax(0,calc(var(--pw,60)*1%)) minmax(0,1fr);gap:20px;align-items:start}
 .card+.card{margin-top:20px}
-@media (max-width:900px){.card+.card{margin-top:16px}}
+@media (max-width:900px){
+  .grid{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+  .col{display:contents}
+  .card+.card{margin-top:0}
+  #playerCard{order:1;align-self:center;width:calc(var(--pw,100)*1%);position:sticky;top:env(safe-area-inset-top,0px);z-index:5} #addCard{order:2} #listCard{order:3} #sendCard{order:4}
+}
 .card.mon{padding:0;overflow:hidden}
 .mon .hint{padding:0 16px 14px;margin:0}
 .mon .hint:empty{display:none}
@@ -119,6 +123,104 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
 @media (pointer:coarse){button{min-height:44px}.thumb-x{width:28px;height:28px}button.small{min-height:40px;padding:6px 12px}.ts{min-height:36px;padding:4px 12px}.pills label{padding:10px 14px}}
 @media (max-width:600px){.topbar-in{padding:12px 10px}.wrap{padding:14px 10px 50px}.card{padding:14px}h2{margin:-14px -14px 14px;padding:12px 14px}.list{max-height:none}.timerow input{max-width:none;flex:1}.sendbtns button{flex:1 1 45%}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* ---- review upgrades ---- */
+.card.mon{position:relative}
+.player{max-height:82vh}
+.grid.stack{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+.grid.stack .col{display:contents}
+.grid.stack .card+.card{margin-top:0}
+.grid.stack #playerCard{order:1;align-self:flex-start;width:calc(var(--pw,60)*1%)}
+.grid.stack #addCard{order:2} .grid.stack #listCard{order:3} .grid.stack #sendCard{order:4}
+.grid.stack #addCard,.grid.stack #listCard,.grid.stack #sendCard{align-self:flex-start;width:min(100%,820px)}
+@media (max-width:900px){.player{max-height:45vh}}
+@media (max-width:900px) and (max-height:520px){#playerCard{position:static}}
+.dim{color:var(--muted);font-size:.8rem;margin:0}
+.pbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px 0}
+.pbar button{white-space:nowrap}
+.popts{margin:10px 16px 12px;padding-right:30px}
+.popts summary{cursor:pointer;color:var(--muted);font-size:.82rem;padding:4px 0}
+.popts-in{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:8px 0 6px}
+.popts label{display:flex;align-items:center;gap:8px;margin:0;color:var(--muted)}
+.popts select{width:auto;padding:5px 8px}
+.popts input[type=range]{width:150px;padding:0;border:0;background:transparent;accent-color:var(--accent)}
+.grip{position:absolute;right:0;bottom:0;width:26px;height:26px;cursor:ew-resize;touch-action:none;z-index:3;opacity:.55;
+  background:linear-gradient(135deg,transparent 0 52%,var(--muted) 52% 58%,transparent 58% 70%,var(--muted) 70% 76%,transparent 76% 88%,var(--muted) 88% 94%,transparent 94%)}
+.grip:hover,.grip:focus-visible{opacity:1}
+.tl{position:relative;height:28px;margin:8px 16px 0}
+.tl-line{position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--line-strong)}
+.tl-play{position:absolute;top:3px;bottom:3px;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;left:0}
+button.mk{position:absolute;top:50%;width:14px;height:14px;min-height:0;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--pin-ink);border:2px solid var(--panel)}
+button.mk:hover{background:#ffd27a;border-color:var(--panel)}
+button.mk.must,button.mk.must:hover{background:var(--bad)}
+button.mk.span{border-radius:4px;height:12px;min-width:10px;transform:translateY(-50%)}
+@media (pointer:coarse){button.mk{width:22px;height:22px}button.mk.span{height:16px}.grip{width:34px;height:34px}}
+.timerow{flex-wrap:wrap}
+.nudge{padding:9px 10px;min-width:50px}
+.endrow{margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.chip{background:var(--bg);border:1px solid var(--line-strong);border-radius:999px;padding:4px 11px;min-height:0;font-size:.8rem;color:var(--muted)}
+.chip:hover{color:var(--ink);border-color:var(--accent);background:var(--accent-soft)}
+@media (pointer:coarse){.chip{min-height:34px;padding:6px 12px}}
+.voice{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.voice select{width:auto;padding:6px 8px;font-size:.85rem}
+button.rec{background:rgba(255,123,112,.16);border-color:var(--bad);color:var(--bad)}
+.ov-tools button.tool.on,.ov-tools button.wt.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+#ovText{width:190px;padding:6px 9px}
+
+/* ---- mobile-first upgrades ---- */
+button{touch-action:manipulation}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.endrow summary{cursor:pointer;color:var(--accent);font-size:.85rem;padding:6px 0}
+.endrow .timerow{margin-top:6px}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:60;max-width:min(92vw,460px);
+  background:var(--raised);border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:10px 14px;font-size:.9rem;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none}
+.toast.err{border-color:var(--bad)}
+@media (max-width:900px){
+  body.typing #playerCard .pbar,body.typing #playerCard .popts,body.typing #playerCard .hint,body.typing #playerCard .grip{display:none!important}
+  body.typing .player{max-height:30vh}
+}
+@media (max-width:600px){.pbar button{flex:1 1 45%}#addBtn{width:100%}}
+@media (pointer:coarse){
+  .kbd-hint{display:none}
+  .endrow summary{padding:12px 0}
+  input,select,textarea,.voice select,.popts select{font-size:16px}
+}
+
+/* ---- overlay toolbar groups ---- */
+[hidden]{display:none!important}
+.ov-bar{flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;padding:6px 10px;overflow-x:auto;scrollbar-width:none}
+.ov-bar::-webkit-scrollbar{display:none}
+.ov-tools{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px;flex:none}
+.ov-act{flex:none}
+.ovg{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.ovg::-webkit-scrollbar{display:none}
+.ovg>*{flex:none}
+.ov-bar button{min-height:28px;padding:3px 9px;font-size:.8rem}
+.ov-bar button.sw{width:22px;height:22px;min-height:0;padding:0}
+.ov-bar .lbl{font-size:.75rem}
+#ovText{width:170px;padding:4px 8px;font-size:.8rem}
+@media (max-width:600px){
+  .ov-bar{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;padding:5px 8px;overflow-x:visible}
+  .ov-tools{flex-direction:column;align-items:stretch;gap:4px}
+  .ovg{gap:5px}
+  .ov-bar button{min-height:26px;padding:3px 7px;font-size:.72rem}
+  .ov-bar button.sw{width:20px;height:20px;min-height:0;padding:0}
+  .ov-bar .lbl{font-size:.7rem}
+  #ovText{width:100%;font-size:16px}
+}
+/* ---- collapsible form fields ---- */
+.fold summary{cursor:pointer;color:var(--accent);font-size:.85rem;padding:6px 0}
+.fold summary b{color:var(--ink);font-weight:600}
+.fold .pills{margin-top:6px}
+@media (pointer:coarse){.fold summary{padding:12px 0}}
+/* ---- time box wide on mobile ---- */
+.ts{white-space:nowrap}
+@media (max-width:600px){
+  .timerow{flex-wrap:wrap}
+  .timerow input{flex:1 1 100%;min-width:0;max-width:none;width:100%}
+  .timerow button{flex:1 1 auto}
+}
 </style>
 </head>
 <body>
@@ -138,59 +240,100 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
 <div class="wrap">
 
 <div class="grid">
-  <!-- LEFT: player + add note -->
-  <div>
-    <div class="card mon">
+  <!-- LEFT: player + list -->
+  <div class="col">
+    <div class="card mon" id="playerCard">
       <div class="player" id="player"><div class="empty">No video loaded. Open the review link your editor sent you.</div></div>
+      <div class="tl" id="tl" hidden aria-label="Your notes on the timeline"><div class="tl-line"></div><div class="tl-play" id="tlPlay"></div><div id="tlMarks"></div></div>
+      <div class="pbar" id="pbar" hidden>
+        <button type="button" class="primary" id="markBtn" hidden>Pause and add note</button>
+        <button type="button" id="markCapBtn" hidden>Pause and capture frame</button>
+      </div>
+      <details class="popts" id="popts">
+        <summary>Player options</summary>
+        <div class="popts-in">
+          <label for="backSel">Rewind on Pause and add note <select id="backSel"><option value="0" selected>None</option><option value="2">2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option></select></label>
+          <label for="sizeR">Player size <input type="range" id="sizeR" min="40" max="100" step="1"></label>
+          <button type="button" class="small" id="sizeReset">Reset size</button>
+        </div>
+        <p class="dim">You can also drag the corner of the player. Above 70% the form moves below the video.</p>
+      </details>
       <p class="hint" id="playerHint"></p>
+      <div class="grip" id="grip" role="slider" tabindex="0" aria-label="Player size" aria-valuemin="40" aria-valuemax="100" aria-valuenow="60" title="Drag to resize. Double-click to reset."></div>
     </div>
 
+    <div class="card" id="listCard">
+      <h2>Your changes <span class="count" id="count"></span></h2>
+      <ul class="list" id="list"></ul>
+      <p class="none" id="noneMsg">Nothing yet. Watch the video and add notes as you go.</p>
+    </div>
+  </div>
+
+  <!-- RIGHT: add note + send -->
+  <div class="col">
     <div class="card" id="addCard">
       <h2>Add a change request</h2>
       <div class="field">
-        <label for="time">Time in video</label>
+        <label for="time">Start time</label>
         <div class="timerow">
           <input id="time" inputmode="text" autocomplete="off" placeholder="0:00" aria-describedby="timeHelp">
+          <button type="button" class="nudge" data-nudge="time" data-d="-1" aria-label="Back 1 second">-1s</button>
+          <button type="button" class="nudge" data-nudge="time" data-d="1" aria-label="Forward 1 second">+1s</button>
           <button type="button" id="nowBtn">Use current time</button>
         </div>
-        <p class="hint" id="timeHelp">Follows the video while you watch. Tap the note box to pause and lock the time. You can type a time like 1:25.</p>
+        <p class="hint" id="timeHelp">Follows the video while it plays. Press Pause and add note under the video, or tap the note box, to lock the time. Use -1s and +1s to fine-tune, or type a time like 1:25.</p>
+        <details class="endrow" id="endDet">
+          <summary>Add an end time (optional), for a stretch like 0:10 to 0:14</summary>
+          <label for="timeEnd" class="sr">End time</label>
+          <div class="timerow">
+            <input id="timeEnd" inputmode="text" autocomplete="off" placeholder="optional">
+            <button type="button" class="nudge" data-nudge="timeEnd" data-d="-1" aria-label="End back 1 second">-1s</button>
+            <button type="button" class="nudge" data-nudge="timeEnd" data-d="1" aria-label="End forward 1 second">+1s</button>
+            <button type="button" id="endBtn">Set to current time</button>
+            <button type="button" class="small" id="endClear">Clear</button>
+          </div>
+        </details>
       </div>
       <div class="field">
-        <label id="catLabel">Type of change</label>
-        <div class="pills" role="radiogroup" aria-labelledby="catLabel" id="cats"></div>
+        <details class="fold" id="catDet">
+          <summary id="catLabel">Type of change: <b id="catVal">Other</b></summary>
+          <div class="pills" role="radiogroup" aria-labelledby="catLabel" id="cats"></div>
+        </details>
       </div>
       <div class="field">
-        <label id="priLabel">Importance</label>
-        <div class="pills" role="radiogroup" aria-labelledby="priLabel" id="pris"></div>
+        <details class="fold" id="priDet">
+          <summary id="priLabel">Importance: <b id="priVal">Must fix</b></summary>
+          <div class="pills" role="radiogroup" aria-labelledby="priLabel" id="pris"></div>
+        </details>
       </div>
       <div class="field">
-        <label for="note">What should change?</label>
-        <textarea id="note" placeholder="Example: Cut this shot 2 seconds earlier. The music is too loud here."></textarea>
+        <label for="note" class="sr">What should change?</label>
+        <div class="chips" id="chips" aria-label="Quick notes"></div>
+        <textarea id="note" placeholder="Tap a quick note above, or write your own. Example: Cut this shot 2 seconds earlier."></textarea>
+        <div class="voice" id="voiceRow" hidden>
+          <button type="button" id="micBtn">Speak</button>
+          <select id="voiceLang" aria-label="Voice language">
+            <option value="">Device language</option><option value="en-IN">English (India)</option><option value="en-US">English (US)</option>
+            <option value="ml-IN">Malayalam</option><option value="hi-IN">Hindi</option><option value="ta-IN">Tamil</option>
+          </select>
+          <span class="dim">Say what should change. Tap Speak again to add more.</span>
+        </div>
       </div>
       <div class="field">
         <label>Screenshots or reference images (optional)</label>
         <div class="imgbtns">
           <button type="button" id="capBtn" hidden>Capture frame</button>
           <button type="button" id="imgBtn">Add image</button>
-          <input type="file" id="imgFile" accept="image/*" multiple hidden>
+          <input type="file" id="imgFile" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp,.avif" multiple class="sr" tabindex="-1" aria-hidden="true">
         </div>
         <div class="thumbs" id="thumbs"></div>
         <p class="hint"><span id="capHint"></span>You can also paste or drop images here. New images open in an editor: draw if needed, then save. Tap a saved image to edit it again. Up to 4 per change.</p>
       </div>
       <button class="primary" id="addBtn">Add to list</button>
-      <span class="hint" style="margin-left:8px">Ctrl+Enter also adds.</span>
-    </div>
-  </div>
-
-  <!-- RIGHT: list + send -->
-  <div>
-    <div class="card">
-      <h2>Your changes <span class="count" id="count"></span></h2>
-      <ul class="list" id="list"></ul>
-      <p class="none" id="noneMsg">Nothing yet. Watch the video and add notes as you go.</p>
+      <span class="hint kbd-hint" style="margin-left:8px">Ctrl+Enter also adds.</span>
     </div>
 
-    <div class="card">
+    <div class="card" id="sendCard">
       <h2>Send to editor</h2>
       <div class="field">
         <label for="client">Your name</label>
@@ -208,7 +351,7 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
         <button id="copyBtn">Copy text</button>
         <button id="dlBtn">Download .txt</button>
       </div>
-      <p class="hint" id="imgNote" hidden>When a change has images, Send on WhatsApp sends a PDF that holds the notes and images. If sharing is not available on this device, the PDF downloads. Attach it in WhatsApp.</p>
+      <p class="hint" id="imgNote" hidden>Your changes include images, so send the PDF. Press Download PDF, then attach the file in WhatsApp. It holds all your notes and images.</p>
       <p id="status" role="status" aria-live="polite"></p>
       <p class="hint">Notes save in this browser automatically. Nothing is sent until you press a send button.</p>
     </div>
@@ -220,14 +363,24 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
   <div class="ov-in">
     <div class="ov-bar">
       <div class="ov-tools" id="ovTools">
-        <span class="lbl">Draw</span>
-        <button type="button" class="sw on" data-c="#ff4d4d" style="--c:#ff4d4d" aria-label="Red pen"></button>
-        <button type="button" class="sw" data-c="#ffd23f" style="--c:#ffd23f" aria-label="Yellow pen"></button>
-        <button type="button" class="sw" data-c="#ffffff" style="--c:#ffffff" aria-label="White pen"></button>
-        <button type="button" id="ovUndo">Undo</button>
-        <button type="button" id="ovClear">Clear drawing</button>
+        <div class="ovg">
+          <button type="button" class="tool on" data-t="pen">Pen</button>
+          <button type="button" class="tool" data-t="arrow">Arrow</button>
+          <button type="button" class="tool" data-t="box">Box</button>
+          <button type="button" class="tool" data-t="circle">Circle</button>
+          <button type="button" class="tool" data-t="text">Text</button>
+        </div>
+        <input id="ovText" maxlength="60" placeholder="Type a label, then tap the image" hidden>
+        <div class="ovg">
+          <span class="lbl">Colour</span>
+          <button type="button" class="sw on" data-c="#ff4d4d" style="--c:#ff4d4d" aria-label="Red pen"></button>
+          <button type="button" class="sw" data-c="#ffd23f" style="--c:#ffd23f" aria-label="Yellow pen"></button>
+          <button type="button" class="sw" data-c="#ffffff" style="--c:#ffffff" aria-label="White pen"></button>
+        </div>
       </div>
-      <div class="ov-act">
+      <div class="ovg ov-act">
+        <button type="button" id="ovUndo" class="edonly">Undo</button>
+        <button type="button" id="ovClear" class="edonly">Clear drawing</button>
         <button type="button" id="ovCancel">Close</button>
         <button type="button" class="primary" id="ovSave">Save drawing</button>
       </div>
@@ -236,6 +389,7 @@ button.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--accent)}
   </div>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script>
 /* ============ EDITOR SETTINGS: change these ============ */
 const CONFIG = {
@@ -256,7 +410,10 @@ const params = new URLSearchParams(location.search);
 
 let state = {client:"",version:"",general:"",items:[]};
 let videoUrl = "";
-let api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
+const NOAPI = {canTime:false, getTime:async()=>null, getDur:async()=>0, seek:()=>{}, seekTo:()=>{}, pause:()=>{}};
+const mkApi = o => Object.assign({}, NOAPI, o);
+let api = mkApi({});
+let dur = 0;
 let dirty = false;
 
 /* ---------- helpers ---------- */
@@ -265,7 +422,12 @@ const fmt = s => { s=Math.max(0,Math.floor(s)); const h=Math.floor(s/3600), m=Ma
 const parseT = str => { if(!str) return null; const p=str.trim().replace(/[.,;]/g,":").split(":").map(Number);
   if(p.some(n=>isNaN(n)||n<0)||p.length>3) return null;
   return p.reduce((a,n)=>a*60+n,0); };
-const say = (msg,err) => { const e=$("#status"); e.textContent=msg; e.className=err?"err":""; };
+const spanTxt = (it,sep) => fmt(it.t)+(it.t2!=null?sep+fmt(it.t2):"");
+let toastTm;
+const say = (msg,err) => { const e=$("#status"); e.textContent=msg; e.className=err?"err":"";
+  const t=$("#toast"); clearTimeout(toastTm);
+  if(!msg){ t.hidden=true; return; }
+  t.textContent=msg; t.className="toast"+(err?" err":""); t.hidden=false; toastTm=setTimeout(()=>{ t.hidden=true; }, err?4200:2400); };
 const key = () => "fb:"+(videoUrl||"none");
 const save = () => { try{localStorage.setItem(key(),JSON.stringify(state));return true}catch(e){ say("Browser storage is full. Images may be lost on refresh. Press Download PDF now.",true); return false} };
 const load = () => { try{const d=JSON.parse(localStorage.getItem(key())); if(d) return d}catch(e){} return null; };
@@ -276,7 +438,7 @@ $("#title").textContent = title; document.title = title;
 const editorName = params.get("editor") || CONFIG.editorName;
 $("#by").textContent = editorName ? "Edited by "+editorName : "";
 const verQ = params.get("version"); if(verQ) $("#badge").textContent = "Version "+verQ;
-$("#cats").innerHTML = CATS.map((c,i)=>`<input type="radio" name="cat" id="c${i}" value="${c}" ${i===0?"checked":""}><label for="c${i}">${c}</label>`).join("");
+$("#cats").innerHTML = CATS.map((c,i)=>`<input type="radio" name="cat" id="c${i}" value="${c}" ${c==="Other"?"checked":""}><label for="c${i}">${c}</label>`).join("");
 $("#pris").innerHTML = PRIS.map((p,i)=>`<input type="radio" name="pri" id="p${i}" value="${p[0]}" ${i===0?"checked":""}><label for="p${i}">${p[1]}</label>`).join("");
 if(CONFIG.whatsappGroup) $("#sendGrp").hidden = false;
 if(CONFIG.formEndpoint) $("#sendForm").hidden = false;
@@ -346,37 +508,55 @@ function parseVideo(url){
 
 
 
-function grabCors(u,t){ return new Promise((res,rej)=>{
-  const c=document.createElement("video"); c.crossOrigin="anonymous"; c.muted=true; c.preload="auto"; c.playsInline=true;
-  let tm; const done=(f,x)=>{ clearTimeout(tm); c.onerror=c.onseeked=c.onloadedmetadata=null; c.removeAttribute("src"); c.load(); f(x); };
-  tm=setTimeout(()=>done(rej,new Error("timeout")),20000);
-  c.onerror=()=>done(rej,new Error("load"));
-  c.onloadedmetadata=()=>{ c.currentTime=Math.max(t,0.01); };
-  c.onseeked=()=>{ try{ const k=Math.min(1,1280/c.videoWidth), cv=document.createElement("canvas"); cv.width=Math.round(c.videoWidth*k); cv.height=Math.round(c.videoHeight*k);
-    cv.getContext("2d").drawImage(c,0,0,cv.width,cv.height); done(res,cv.toDataURL("image/jpeg",.85)); }catch(e){ done(rej,e); } };
-  c.src=u; }); }
+/* ---- fast frame capture helper: one hidden CORS-enabled video, prepared once, reused ---- */
+let capReady = null;
+function prepCap(srcs){
+  capReady = (async()=>{
+    for(const u of srcs){
+      try{
+        const c=document.createElement("video"); c.crossOrigin="anonymous"; c.muted=true; c.preload="metadata"; c.playsInline=true;
+        await new Promise((res,rej)=>{ const tm=setTimeout(()=>rej(new Error("timeout")),15000);
+          c.onloadedmetadata=()=>{ clearTimeout(tm); res(); }; c.onerror=()=>{ clearTimeout(tm); rej(new Error("load")); }; c.src=u; });
+        return c;
+      }catch(e){}
+    }
+    return null;
+  })();
+}
+async function grabFast(t){
+  const c = capReady && await capReady; if(!c || !c.videoWidth) return null;
+  const want = Math.max(t,0.01);
+  if(Math.abs(c.currentTime-want)>0.03 || c.readyState<2){
+    await new Promise(res=>{ let fin=false; const f=()=>{ if(fin) return; fin=true; c.onseeked=null; res(); };
+      c.onseeked=f; setTimeout(f,8000); c.currentTime=want; });
+  }
+  try{ const k=Math.min(1,1280/c.videoWidth), cv=document.createElement("canvas"); cv.width=Math.round(c.videoWidth*k); cv.height=Math.round(c.videoHeight*k);
+    cv.getContext("2d").drawImage(c,0,0,cv.width,cv.height); return cv.toDataURL("image/jpeg",.85); }catch(e){ return null; }
+}
 
 /* ---- plain file player (browser default controls) ---- */
 function mountFile(info){
-  const box=$("#player"); box.innerHTML="";
-  const v=document.createElement("video"); v.src=info.src; v.controls=true; v.playsInline=true; v.preload="metadata"; box.appendChild(v);
-  api = {canTime:true, getTime:async()=>v.currentTime, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, pause:()=>v.pause(),
+  const box=$("#player"); box.innerHTML=""; capReady=null;
+  const cors = info.cors!==false;   // try a CORS-clean player first: then capture is instant
+  const altCand = /dropbox\.com\//.test(info.src) ? info.src.replace("www.dropbox.com","dl.dropboxusercontent.com").replace(/[?&]raw=1/,"").replace(/[?&]dl=[01]/,"").replace(/\?&/,"?") : null;
+  const alt = altCand && altCand!==info.src ? altCand : null;
+  const v=document.createElement("video"); if(cors) v.crossOrigin="anonymous"; v.src=info.src; v.controls=true; v.playsInline=true; v.preload="metadata"; box.appendChild(v);
+  const capSrcs=()=>{ const l=[info.src]; if(alt) l.push(alt); return l; };
+  if(!cors) v.addEventListener("loadedmetadata",()=>{ setTimeout(()=>prepCap(capSrcs()),400); },{once:true});
+  api = mkApi({canTime:true, getTime:async()=>v.currentTime, getDur:async()=>isFinite(v.duration)?v.duration:0, seek:t=>{v.currentTime=t;v.play().catch(()=>{})}, seekTo:t=>{v.currentTime=t;v.pause()}, pause:()=>v.pause(),
     capture:async()=>{ if(!v.videoWidth) return null;
       try{ const k=Math.min(1,1280/v.videoWidth), c=document.createElement("canvas"); c.width=Math.round(v.videoWidth*k); c.height=Math.round(v.videoHeight*k); c.getContext("2d").drawImage(v,0,0,c.width,c.height); return c.toDataURL("image/jpeg",.85); }catch(e){}
-      const t=v.currentTime, srcs=[info.src];
-      if(/dropbox\.com\//.test(info.src)) srcs.push(info.src.replace("www.dropbox.com","dl.dropboxusercontent.com").replace(/[?&]raw=1/,"").replace(/[?&]dl=[01]/,"").replace(/\?&/,"?"));
-      for(const u of srcs){ try{ const d=await grabCors(u,t); if(d) return d; }catch(e){} }
-      return null; }};
+      if(!capReady) prepCap(capSrcs());
+      return await grabFast(v.currentTime); }});
   updateCap();
   v.addEventListener("error",()=>{
-    // Dropbox: some phones refuse the share host. Retry once on Dropbox's direct host.
-    if(/dropbox\.com\//.test(info.src) && !info.retried){
-      const alt=info.src.replace("www.dropbox.com","dl.dropboxusercontent.com").replace(/[?&]raw=1/,"").replace(/[?&]dl=[01]/,"").replace(/\?&/,"?");
-      mountFile({kind:"file", src:alt, original:info.original, retried:true}); return;
-    }
+    // 1) host may not allow CORS: retry the same link as a normal player
+    if(cors){ mountFile({kind:"file", src:info.src, original:info.original, retried:info.retried, cors:false}); return; }
+    // 2) Dropbox: some phones refuse the share host. Retry once on Dropbox's direct host.
+    if(alt && !info.retried){ mountFile({kind:"file", src:alt, original:info.original, retried:true}); return; }
     const code=v.error&&v.error.code?" (error "+v.error.code+")":"";
     box.innerHTML='<div class="empty">This link would not play here'+code+'.</div>';
-    api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
+    api = mkApi({});
     updateCap(); const h=$("#playerHint"); h.textContent="Open the video in a new tab: ";
     const a=document.createElement("a"); a.href=info.original; a.target="_blank"; a.rel="noopener"; a.textContent="open link";
     h.appendChild(a); h.append(". Then type the time yourself.");
@@ -386,9 +566,9 @@ function mountFile(info){
 
 async function setVideo(url){
   url = url.trim(); if(!url) return;
-  videoUrl = url;
+  videoUrl = url; dur = 0;
   const box = $("#player"); box.innerHTML = ""; $("#playerHint").textContent = "";
-  api = {canTime:false, getTime:async()=>null, seek:()=>{}, pause:()=>{}};
+  api = mkApi({});
 
   const yt = ytId(url), vm = vimeoParts(url);
   if(yt){
@@ -396,13 +576,13 @@ async function setVideo(url){
     box.innerHTML = '<div id="ytbox"></div>';
     await loadYT();
     const p = new YT.Player("ytbox",{videoId:yt,playerVars:{rel:0,playsinline:1}});
-    api = {canTime:true, getTime:async()=>p.getCurrentTime?p.getCurrentTime():null, seek:t=>{p.seekTo(t,true);p.playVideo&&p.playVideo()}, pause:()=>p.pauseVideo&&p.pauseVideo()};
+    api = mkApi({canTime:true, getTime:async()=>p.getCurrentTime?p.getCurrentTime():null, getDur:async()=>p.getDuration?(p.getDuration()||0):0, seek:t=>{p.seekTo(t,true);p.playVideo&&p.playVideo()}, seekTo:t=>{p.seekTo(t,true);p.pauseVideo&&p.pauseVideo()}, pause:()=>p.pauseVideo&&p.pauseVideo()});
   } else if(vm){
     const f=document.createElement("iframe");
     f.src="https://player.vimeo.com/video/"+vm.id+(vm.h?"?h="+vm.h:""); f.allow="autoplay; fullscreen; picture-in-picture"; f.allowFullscreen=true;
     box.appendChild(f); await loadVimeo();
     const p = new Vimeo.Player(f);
-    api = {canTime:true, getTime:()=>p.getCurrentTime(), seek:t=>{p.setCurrentTime(t).then(()=>p.play()).catch(()=>{})}, pause:()=>{p.pause().catch(()=>{})}};
+    api = mkApi({canTime:true, getTime:()=>p.getCurrentTime(), getDur:()=>p.getDuration(), seek:t=>{p.setCurrentTime(t).then(()=>p.play()).catch(()=>{})}, seekTo:t=>{p.setCurrentTime(t).then(()=>p.pause()).catch(()=>{})}, pause:()=>{p.pause().catch(()=>{})}});
   } else {
     const info=parseVideo(url);
     if(info.kind==="iframe"){
@@ -424,25 +604,36 @@ async function setVideo(url){
 
 /* ---------- time follow ---------- */
 setInterval(async()=>{
-  if(!api.canTime || dirty || document.activeElement===$("#note")) return;
-  try{ const t=await api.getTime(); if(t!=null) $("#time").value=fmt(t); }catch(e){}
+  if(!api.canTime) return;
+  try{
+    const t=await api.getTime();
+    if(!dur){ const d=await api.getDur(); if(d>0){ dur=d; renderMarks(); } }
+    if(dur>0 && t!=null) $("#tlPlay").style.left=Math.min(100,t/dur*100)+"%";
+    if(!dirty && document.activeElement!==$("#note") && t!=null) $("#time").value=fmt(t);
+  }catch(e){}
 },400);
 $("#time").addEventListener("input",()=>{dirty=true});
-$("#note").addEventListener("focus",async()=>{
+async function lockTime(){
   if(api.canTime && !dirty){ try{ const t=await api.getTime(); if(t!=null) $("#time").value=fmt(t); api.pause(); }catch(e){} }
-});
+}
+$("#note").addEventListener("focus",lockTime);
 $("#nowBtn").onclick = async()=>{ dirty=false; if(!api.canTime){say("Cannot read time from this video type. Type it in.",true);return}
   const t=await api.getTime(); if(t!=null) $("#time").value=fmt(t); };
 
 /* ---------- items ---------- */
 function addItem(){
   const t = parseT($("#time").value);
+  const endRaw = $("#timeEnd").value.trim();
+  const t2 = endRaw ? parseT(endRaw) : null;
   const text = $("#note").value.trim();
   if(t===null){ say("Enter a time like 1:25.",true); $("#time").focus(); return; }
+  if(endRaw && t2===null){ say("End time must look like 1:40, or leave it empty.",true); $("#timeEnd").focus(); return; }
+  if(t2!==null && t2<=t){ say("End time must be after the start time.",true); $("#timeEnd").focus(); return; }
   if(!text){ say("Write what should change.",true); $("#note").focus(); return; }
-  state.items.push({id:Date.now()+Math.random(),t,cat:document.querySelector('input[name=cat]:checked').value,
+  state.items.push({id:Date.now()+Math.random(),t,t2,cat:document.querySelector('input[name=cat]:checked').value,
     pri:document.querySelector('input[name=pri]:checked').value,text,imgs:pending.slice(),done:false});
-  $("#note").value=""; dirty=false; pending=[]; renderThumbs(); say("Added."); save(); render();
+  $("#note").value=""; $("#timeEnd").value=""; resetSel(); dirty=false; pending=[]; renderThumbs(); say("Added."); save(); render();
+  if(mq.matches && document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 $("#addBtn").onclick = addItem;
 $("#note").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)) addItem(); });
@@ -451,11 +642,15 @@ function render(){
   const items=[...state.items].sort((a,b)=>a.t-b.t);
   $("#count").textContent = items.length?`(${items.length})`:"";
   $("#noneMsg").hidden = items.length>0;
-  $("#imgNote").hidden = !items.some(i=>i.imgs&&i.imgs.length); warmReport();
+  const withImgs = items.some(i=>i.imgs&&i.imgs.length);
+  $("#imgNote").hidden = !withImgs;
+  $("#sendWa").hidden = withImgs;
+  $("#repBtn").classList.toggle("primary", withImgs);
+  warmReport(); renderMarks();
   const ul=$("#list"); ul.innerHTML="";
   items.forEach(it=>{
     const li=document.createElement("li"); li.className="item"+(it.done?" done":"");
-    const ts=document.createElement("button"); ts.className="ts"; ts.textContent=fmt(it.t); ts.title="Jump to this time";
+    const ts=document.createElement("button"); ts.className="ts"; ts.textContent=spanTxt(it," - "); ts.title="Jump to this time";
     ts.onclick=()=>api.seek(it.t);
     const tags=document.createElement("div"); tags.className="tags";
     tags.innerHTML=""; tags.append(it.cat+" · ");
@@ -463,9 +658,9 @@ function render(){
     const p=document.createElement("p"); p.className="txt"; p.textContent=it.text;
     const acts=document.createElement("div"); acts.className="acts";
     const ed=document.createElement("button"); ed.className="small"; ed.textContent="Edit";
-    ed.onclick=()=>{ $("#time").value=fmt(it.t); dirty=true; $("#note").value=it.text; pending=(it.imgs||[]).slice(); renderThumbs();
+    ed.onclick=()=>{ $("#time").value=fmt(it.t); $("#timeEnd").value=it.t2!=null?fmt(it.t2):""; if(it.t2!=null) $("#endDet").open=true; dirty=true; $("#note").value=it.text; pending=(it.imgs||[]).slice(); renderThumbs();
       const c=[...document.querySelectorAll('input[name=cat]')].find(r=>r.value===it.cat); if(c)c.checked=true;
-      const r=[...document.querySelectorAll('input[name=pri]')].find(r=>r.value===it.pri); if(r)r.checked=true;
+      const r=[...document.querySelectorAll('input[name=pri]')].find(r=>r.value===it.pri); if(r)r.checked=true; syncSel(); renderChips();
       state.items=state.items.filter(x=>x.id!==it.id); save(); render(); $("#note").focus(); };
     const del=document.createElement("button"); del.className="small del"; del.textContent="Delete";
     del.onclick=()=>{ state.items=state.items.filter(x=>x.id!==it.id); save(); render(); };
@@ -484,7 +679,7 @@ function buildText(){
   if(state.version) s+=`Version: ${state.version}\n`;
   if(videoUrl) s+=`Video: ${videoUrl}\n`;
   s+=`Changes: ${items.length}\n\n`;
-  items.forEach(it=>{ s+=`[${fmt(it.t)}] ${it.cat} (${it.pri==="must"?"Must fix":"Nice to have"})\n${it.text}\n${it.imgs&&it.imgs.length?"Images: "+it.imgs.length+" (in the PDF report)\n":""}\n`; });
+  items.forEach(it=>{ s+=`[${spanTxt(it," - ")}] ${it.cat} (${it.pri==="must"?"Must fix":"Nice to have"})\n${it.text}\n${it.imgs&&it.imgs.length?"Images: "+it.imgs.length+" (in the PDF report)\n":""}\n`; });
   if(state.general) s+=`Overall comments:\n${state.general}\n`;
   return s.trim();
 }
@@ -492,18 +687,8 @@ function ready(){ if(!state.items.length && !state.general.trim()){ say("Add at 
 
 const hasImgs=()=>state.items.some(i=>i.imgs&&i.imgs.length);
 function saveReport(f){ const a=document.createElement("a"); a.href=URL.createObjectURL(f); a.download=f.name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
-$("#sendWa").onclick=async()=>{ if(!ready())return;
-  let text=buildText();
-  if(hasImgs()){
-    let f=pdfCache.file&&pdfCache.sig===sigOf()?pdfCache.file:null;
-    if(!f){ say("Preparing PDF..."); try{ f=await getReport(); }catch(e){ say("Could not build the PDF. Use Copy text instead.",true); return; } }
-    text+="\n\nFull PDF report with images is attached.";
-    if(navigator.canShare && navigator.canShare({files:[f]})){
-      try{ await navigator.share({files:[f],text,title}); say("Shared."); return; }catch(e){ if(e&&e.name==="AbortError") return; } }
-    saveReport(f);
-    say("PDF downloaded. WhatsApp opened. Attach the downloaded PDF to the chat, then send.");
-  }
-  window.open(`https://wa.me/${CONFIG.whatsapp||""}?text=${encodeURIComponent(text)}`,"_blank","noopener"); };
+$("#sendWa").onclick=()=>{ if(!ready())return;
+  window.open(`https://wa.me/${CONFIG.whatsapp||""}?text=${encodeURIComponent(buildText())}`,"_blank","noopener"); };
 $("#sendGrp").onclick=async()=>{ if(!ready())return;
   try{ await navigator.clipboard.writeText(buildText()); say("Copied. Paste it in the group chat."); }catch(e){ say("Copy blocked. Use Copy text, then open the group.",true);}
   window.open(CONFIG.whatsappGroup,"_blank","noopener"); };
@@ -527,7 +712,7 @@ const MAX_IMGS=4;
 let pending=[];
 function updateCap(){
   const ok=!!api.capture;
-  $("#capBtn").hidden=!ok;
+  $("#capBtn").hidden=!ok; $("#markCapBtn").hidden=!ok; $("#markBtn").hidden=!api.canTime; $("#pbar").hidden=!api.canTime;
   $("#capHint").textContent = ok ? "Capture frame grabs the picture at this time. " : "This video type does not allow frame capture. Pause the video and take a screenshot (phone: power + volume down), then press Add image and pick it. ";
 }
 function renderThumbs(){
@@ -541,7 +726,7 @@ function renderThumbs(){
     x.onclick=()=>{ pending.splice(i,1); renderThumbs(); };
     w.append(o,x); box.appendChild(w);
   });
-  const full=pending.length>=MAX_IMGS; $("#imgBtn").disabled=full; $("#capBtn").disabled=full;
+  const full=pending.length>=MAX_IMGS; $("#imgBtn").disabled=full; $("#capBtn").disabled=full; $("#markCapBtn").disabled=full;
 }
 function fileToData(file){ return new Promise((res,rej)=>{
   const u=URL.createObjectURL(file), im=new Image();
@@ -550,17 +735,21 @@ function fileToData(file){ return new Promise((res,rej)=>{
     URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",.82)); };
   im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("bad image")); };
   im.src=u; }); }
+// Windows often reports an empty file type for .jfif, .webp, .avif: accept by extension too
+const isImgFile=f=>(f.type||"").startsWith("image/") || /\.(jpe?g|jfif|pjpeg|pjp|png|gif|webp|avif|bmp|tiff?)$/i.test(f.name||"");
 async function addImageFiles(files){
-  let skipped=false, bad=false, added=0;
+  let skipped=false, bad=false, added=0, notImg=false;
   for(const f of files){
-    if(!f.type.startsWith("image/")) continue;
+    if(!isImgFile(f)){ notImg=true; continue; }
     if(pending.length>=MAX_IMGS){ skipped=true; break; }
     try{ const d=await fileToData(f); if(await addNew(d)) added++; }catch(e){ bad=true; }
   }
   renderThumbs();
   if(skipped) say("Up to "+MAX_IMGS+" images per change.",true);
   else if(bad) say("One image could not be read. Try a JPG or PNG.",true);
-  else say(added?"Image added.":"Image discarded.");
+  else if(added) say("Image added.");
+  else if(notImg) say("That file is not an image. Pick a JPG or PNG.",true);
+  else say("Image discarded.");
 }
 $("#imgBtn").onclick=()=>$("#imgFile").click();
 $("#imgFile").addEventListener("change",e=>{ addImageFiles([...e.target.files]); e.target.value=""; });
@@ -568,6 +757,8 @@ document.addEventListener("paste",e=>{
   if(!$("#ov").hidden) return;
   const fs=[...((e.clipboardData&&e.clipboardData.files)||[])].filter(f=>f.type.startsWith("image/"));
   if(fs.length){ e.preventDefault(); addImageFiles(fs); } });
+// a file dropped outside the drop area would open the file and leave the page
+["dragover","drop"].forEach(t=>document.addEventListener(t,e=>{ if(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files")) e.preventDefault(); }));
 const addCard=$("#addCard");
 addCard.addEventListener("dragover",e=>{ e.preventDefault(); addCard.classList.add("drop"); });
 addCard.addEventListener("dragleave",()=>addCard.classList.remove("drop"));
@@ -579,7 +770,7 @@ $("#capBtn").onclick=async()=>{
     const d=api.capture&&await api.capture(); if(!d) throw new Error("none");
     if(t!=null){ $("#time").value=fmt(t); dirty=true; }
     say("Draw on the frame if needed, then press Save image.");
-    say((await addNew(d))?"Frame added.":"Frame discarded.");
+    const okAdd=await addNew(d); say(okAdd?"Frame added. Now write what should change.":"Frame discarded."); if(okAdd) $("#note").focus();
   }catch(e){ say("This host blocks frame capture. Take a screenshot on your device and press Add image.",true); } };
 
 /* ---------- draw / view overlay ---------- */
@@ -588,14 +779,30 @@ let ovImg=null, strokes=[], cur=null, penColor="#ff4d4d", ovCb=null, ovCancelCb=
 const addNew=src=>new Promise(res=>openOv(src,true,d=>{ pending.push(d); renderThumbs(); res(true); },()=>res(false),true));
 function paint(){
   cx.drawImage(ovImg,0,0,cv.width,cv.height);
-  cx.lineCap="round"; cx.lineJoin="round"; cx.lineWidth=Math.max(4,cv.width/200);
-  strokes.forEach(s=>{ cx.strokeStyle=s.c; cx.fillStyle=s.c; cx.beginPath();
-    if(s.p.length===1){ cx.arc(s.p[0][0],s.p[0][1],cx.lineWidth/2,0,6.283); cx.fill(); return; }
-    cx.moveTo(s.p[0][0],s.p[0][1]); s.p.slice(1).forEach(q=>cx.lineTo(q[0],q[1])); cx.stroke(); });
+  cx.lineCap="round"; cx.lineJoin="round";
+  const base=Math.max(4,cv.width/200);
+  strokes.forEach(s=>{
+    const w=s.w||1, lw=base*w; cx.lineWidth=lw; cx.strokeStyle=s.c; cx.fillStyle=s.c; cx.beginPath();
+    if(s.k==="text"){
+      const fs=Math.round(Math.max(24,cv.width/24)*(0.75+0.25*w));
+      cx.font="600 "+fs+"px system-ui,'Segoe UI',Arial,sans-serif"; cx.textAlign="center"; cx.textBaseline="middle";
+      cx.lineWidth=Math.max(3,fs/7); cx.strokeStyle="rgba(0,0,0,.8)"; cx.strokeText(s.text,s.a[0],s.a[1]); cx.fillText(s.text,s.a[0],s.a[1]); return; }
+    if(s.k==="box"){ cx.strokeRect(Math.min(s.a[0],s.b[0]),Math.min(s.a[1],s.b[1]),Math.abs(s.b[0]-s.a[0]),Math.abs(s.b[1]-s.a[1])); return; }
+    if(s.k==="circle"){ cx.ellipse((s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2,Math.max(1,Math.abs(s.b[0]-s.a[0])/2),Math.max(1,Math.abs(s.b[1]-s.a[1])/2),0,0,6.2832); cx.stroke(); return; }
+    if(s.k==="arrow"){
+      const dx=s.b[0]-s.a[0], dy=s.b[1]-s.a[1]; if(Math.hypot(dx,dy)<3) return;
+      const ang=Math.atan2(dy,dx), hl=Math.max(22,lw*5);
+      cx.moveTo(s.a[0],s.a[1]); cx.lineTo(s.b[0],s.b[1]);
+      cx.moveTo(s.b[0],s.b[1]); cx.lineTo(s.b[0]-hl*Math.cos(ang-0.5),s.b[1]-hl*Math.sin(ang-0.5));
+      cx.moveTo(s.b[0],s.b[1]); cx.lineTo(s.b[0]-hl*Math.cos(ang+0.5),s.b[1]-hl*Math.sin(ang+0.5));
+      cx.stroke(); return; }
+    if(s.p.length===1){ cx.arc(s.p[0][0],s.p[0][1],lw/2,0,6.2832); cx.fill(); return; }
+    cx.moveTo(s.p[0][0],s.p[0][1]); s.p.slice(1).forEach(q=>cx.lineTo(q[0],q[1])); cx.stroke();
+  });
 }
 function openOv(src,edit,cb,cancelCb,isNew){
   ovFocus=document.activeElement; ovEdit=edit; ovCb=cb||null; ovCancelCb=cancelCb||null; strokes=[]; cur=null;
-  $("#ovTools").hidden=!edit; $("#ovSave").hidden=!edit; $("#ovSave").textContent=isNew?"Save image":"Save drawing"; $("#ovCancel").textContent=edit?(isNew?"Discard":"Cancel"):"Close";
+  $("#ovTools").hidden=!edit; document.querySelectorAll(".edonly").forEach(x=>x.hidden=!edit); $("#ovSave").hidden=!edit; $("#ovSave").textContent=isNew?"Save image":"Save drawing"; $("#ovCancel").textContent=edit?(isNew?"Discard":"Cancel"):"Close";
   cv.className=edit?"":"view";
   const im=new Image(); im.onload=()=>{ ovImg=im; cv.width=im.naturalWidth; cv.height=im.naturalHeight; paint();
     ov.hidden=false; document.body.style.overflow="hidden"; $("#ovCancel").focus(); };
@@ -604,10 +811,23 @@ function openOv(src,edit,cb,cancelCb,isNew){
 function closeOv(){ const f=ovCancelCb; ovCancelCb=null; ov.hidden=true; document.body.style.overflow=""; if(ovFocus&&ovFocus.focus) try{ovFocus.focus()}catch(e){}
   if(f) f(); }
 const ptr=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]; };
-cv.addEventListener("pointerdown",e=>{ if(!ovEdit) return; cv.setPointerCapture(e.pointerId); cur={c:penColor,p:[ptr(e)]}; strokes.push(cur); paint(); e.preventDefault(); });
-cv.addEventListener("pointermove",e=>{ if(!cur) return; cur.p.push(ptr(e)); paint(); });
-["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>{ cur=null; }));
+let tool="pen", penW=1;
+cv.addEventListener("pointerdown",e=>{ if(!ovEdit) return; e.preventDefault();
+  const p=ptr(e);
+  if(tool==="text"){
+    const t=$("#ovText").value.trim(); if(!t){ $("#ovText").focus(); return; }
+    strokes.push({k:"text",c:penColor,w:penW,a:p,text:t}); paint(); return; }
+  cv.setPointerCapture(e.pointerId);
+  cur = tool==="pen" ? {k:"pen",c:penColor,w:penW,p:[p]} : {k:tool,c:penColor,w:penW,a:p,b:p};
+  strokes.push(cur); paint(); });
+cv.addEventListener("pointermove",e=>{ if(!cur) return; const p=ptr(e); if(cur.k==="pen") cur.p.push(p); else cur.b=p; paint(); });
+["pointerup","pointercancel"].forEach(t=>cv.addEventListener(t,()=>{
+  if(cur && cur.k!=="pen" && Math.hypot(cur.b[0]-cur.a[0],cur.b[1]-cur.a[1])<8){ strokes.splice(strokes.indexOf(cur),1); paint(); }
+  cur=null; }));
 document.querySelectorAll(".sw").forEach(b=>b.onclick=()=>{ penColor=b.dataset.c; document.querySelectorAll(".sw").forEach(x=>x.classList.toggle("on",x===b)); });
+document.querySelectorAll(".tool").forEach(b=>b.onclick=()=>{ tool=b.dataset.t; document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("on",x===b));
+  $("#ovText").hidden = tool!=="text"; if(tool==="text") $("#ovText").focus(); });
+document.querySelectorAll(".wt").forEach(b=>b.onclick=()=>{ penW=+b.dataset.w; document.querySelectorAll(".wt").forEach(x=>x.classList.toggle("on",x===b)); });
 $("#ovUndo").onclick=()=>{ strokes.pop(); paint(); };
 $("#ovClear").onclick=()=>{ strokes=[]; paint(); };
 $("#ovCancel").onclick=closeOv;
@@ -670,7 +890,7 @@ async function buildPdf(){
   y+=8; para(items.length+" change"+(items.length===1?"":"s"),26,"#111",600,40); y+=10;
   for(const it of items){
     ensure(170); c.strokeStyle="#ddd"; c.lineWidth=2; c.beginPath(); c.moveTo(M,y); c.lineTo(W-M,y); c.stroke(); y+=22;
-    const tc=fmt(it.t); c.font="600 26px ui-monospace,Consolas,monospace"; const tw=c.measureText(tc).width+28;
+    const tc=spanTxt(it," - "); c.font="600 26px ui-monospace,Consolas,monospace"; const tw=c.measureText(tc).width+28;
     c.fillStyle="#fff2cc"; c.strokeStyle="#e6c46a"; c.lineWidth=2; c.beginPath(); c.roundRect(M,y,tw,42,6); c.fill(); c.stroke();
     c.fillStyle="#7a4b00"; c.fillText(tc,M+14,y+8);
     c.font="400 24px "+PDF_FONT; c.fillStyle="#555"; const cat=it.cat+" - "; c.fillText(cat,M+tw+16,y+9);
@@ -693,13 +913,139 @@ async function buildPdf(){
   return new File([blob],(title.replace(/[^\w]+/g,"-")||"feedback")+"-feedback.pdf",{type:"application/pdf"});
 }
 let pdfCache={sig:"",file:null}, pdfTimer;
-const sigOf=()=>JSON.stringify([title,state.client,state.version,state.general,state.items.map(i=>[i.t,i.cat,i.pri,i.text,(i.imgs||[]).map(d=>d.length+d.slice(-24))])]);
+const sigOf=()=>JSON.stringify([title,state.client,state.version,state.general,state.items.map(i=>[i.t,i.t2,i.cat,i.pri,i.text,(i.imgs||[]).map(d=>d.length+d.slice(-24))])]);
 async function getReport(){ const sig=sigOf(); if(pdfCache.file&&pdfCache.sig===sig) return pdfCache.file; const f=await buildPdf(); pdfCache={sig,file:f}; return f; }
 function warmReport(){ clearTimeout(pdfTimer); if(!hasImgs()) return; pdfTimer=setTimeout(()=>{ getReport().catch(()=>{}); },700); }
 $("#repBtn").onclick=async()=>{ if(!ready())return; say("Preparing PDF..."); try{ saveReport(await getReport()); say("PDF downloaded. Send this file to your editor."); }catch(e){ say("Could not build the PDF.",true); } };
 
+/* ---------- quick-phrase chips ---------- */
+const PHRASES = {
+  "Cut / trim":["Trim this shot earlier","Trim this shot later","Remove this shot","Cut is too abrupt","Hold this shot longer"],
+  "Audio":["Too loud","Too quiet","Background noise","Voice not clear","Audio out of sync"],
+  "Music":["Music too loud","Music too quiet","Music starts too early","Music starts too late","Change the music"],
+  "Colour":["Too dark","Too bright","Colours look dull","Skin tone looks off","Match colour with other shots"],
+  "Text / graphics":["Fix spelling","Make text bigger","Move text","Text is on screen too briefly","Change font"],
+  "Speed / pacing":["Too fast","Too slow","Add slow motion","Tighten this part"],
+  "Other":["Add something here","Remove this part","Replace this clip"]
+};
+function renderChips(){
+  const c=document.querySelector('input[name=cat]:checked'), box=$("#chips"); box.innerHTML="";
+  ((c&&PHRASES[c.value])||[]).forEach(txt=>{
+    const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=txt;
+    b.onclick=()=>{ const n=$("#note"), v=n.value.trim();
+      n.value = v ? v+(/[.!?]$/.test(v)?" ":". ")+txt : txt;
+      n.focus(); n.setSelectionRange(n.value.length,n.value.length); };
+    box.appendChild(b); });
+}
+function syncSel(){ const c=document.querySelector('input[name=cat]:checked'), p=document.querySelector('input[name=pri]:checked');
+  if(c) $("#catVal").textContent=c.value; if(p){ const x=PRIS.find(q=>q[0]===p.value); if(x) $("#priVal").textContent=x[1]; } }
+function resetSel(){ const c=[...document.querySelectorAll('input[name=cat]')].find(r=>r.value==="Other"); if(c) c.checked=true;
+  const p=document.querySelector('input[name=pri]'); if(p) p.checked=true; syncSel(); renderChips(); }
+$("#cats").addEventListener("change",()=>{ syncSel(); renderChips(); });
+$("#pris").addEventListener("change",syncSel);
+
+/* ---------- pause and add note, nudge, end time ---------- */
+async function markHere(){
+  if(!api.canTime){ say("This video type does not share its time. Read the time from the player and type it in.",true); $("#time").focus(); return; }
+  try{
+    api.pause();
+    let t=await api.getTime(); if(t==null) throw new Error("no time");
+    const back=+$("#backSel").value||0; t=Math.max(0,t-back);
+    $("#time").value=fmt(t); dirty=true;
+    if(back) api.seekTo(t);
+    say(back?"Time set "+back+"s earlier. Adjust with -1s/+1s.":"Time set.");
+  }catch(e){ say("Could not read the time. Type it in.",true); }
+  $("#note").focus();
+}
+$("#markBtn").onclick=markHere;
+$("#markCapBtn").onclick=()=>$("#capBtn").click();
+function nudge(id,d){
+  const el=$("#"+id); let cur=parseT(el.value);
+  if(cur===null){ cur=(id==="timeEnd"?parseT($("#time").value):null); if(cur===null) cur=0; }
+  let nt=Math.max(0,cur+d); if(dur>0) nt=Math.min(nt,Math.floor(dur));
+  el.value=fmt(nt); dirty=true; if(api.canTime) api.seekTo(nt);
+}
+document.querySelectorAll("[data-nudge]").forEach(b=>b.onclick=()=>nudge(b.dataset.nudge,+b.dataset.d));
+$("#endBtn").onclick=async()=>{
+  if(!api.canTime){ say("Cannot read time from this video type. Type it in.",true); return; }
+  const t=await api.getTime(); if(t!=null) $("#timeEnd").value=fmt(t); };
+$("#endClear").onclick=()=>{ $("#timeEnd").value=""; };
+
+/* ---------- timeline markers ---------- */
+function renderMarks(){
+  const tl=$("#tl"), box=$("#tlMarks"); box.innerHTML="";
+  const show=api.canTime && dur>0; tl.hidden=!show; if(!show) return;
+  state.items.forEach(it=>{
+    const b=document.createElement("button"); b.type="button";
+    b.className="mk"+(it.pri==="must"?" must":"")+(it.t2!=null?" span":"");
+    const a=Math.min(100,it.t/dur*100); b.style.left=a+"%";
+    if(it.t2!=null){ const e=Math.min(100,it.t2/dur*100); b.style.width="max(10px,"+Math.max(0,e-a)+"%)"; }
+    const label=spanTxt(it," - ")+", "+it.cat;
+    b.title=label; b.setAttribute("aria-label","Jump to "+label);
+    b.onclick=()=>api.seek(it.t);
+    box.appendChild(b);
+  });
+}
+
+/* ---------- resizable player ---------- */
+const gridEl=document.querySelector(".grid"), mq=window.matchMedia("(max-width:900px)");
+let pw=60, gripDrag=false, gripOff=0;
+const sizeKey=()=>"fb:psize:"+(mq.matches?"m":"d");
+const sizeDefault=()=>mq.matches?100:60;
+function applySize(v,persist){
+  pw=Math.max(40,Math.min(100,Math.round(v)));
+  gridEl.style.setProperty("--pw",pw);
+  gridEl.classList.toggle("stack",!mq.matches && pw>70);
+  $("#sizeR").value=pw; $("#grip").setAttribute("aria-valuenow",pw);
+  if(persist){ try{ localStorage.setItem(sizeKey(),String(pw)); }catch(e){} }
+}
+function loadSize(){
+  let v=sizeDefault();
+  try{ const x=parseFloat(localStorage.getItem(sizeKey())); if(x>=40&&x<=100) v=x; }catch(e){}
+  applySize(v,false); $("#popts").open=!mq.matches;
+}
+if(mq.addEventListener) mq.addEventListener("change",loadSize); else mq.addListener(loadSize);
+const gr=$("#grip");
+gr.addEventListener("pointerdown",e=>{ gr.setPointerCapture(e.pointerId); gripDrag=true; gripOff=$("#playerCard").getBoundingClientRect().right-e.clientX; e.preventDefault(); });
+gr.addEventListener("pointermove",e=>{ if(!gripDrag) return;
+  const r=gridEl.getBoundingClientRect(), x=e.clientX+gripOff;
+  applySize(mq.matches ? 2*(x-(r.left+r.width/2))/r.width*100 : (x-r.left)/r.width*100, false); });
+const endDrag=()=>{ if(gripDrag){ gripDrag=false; applySize(pw,true); } };
+gr.addEventListener("pointerup",endDrag); gr.addEventListener("pointercancel",endDrag);
+gr.addEventListener("keydown",e=>{ const k={ArrowRight:2,ArrowUp:2,ArrowLeft:-2,ArrowDown:-2}[e.key]; if(k){ e.preventDefault(); applySize(pw+k,true); } });
+gr.addEventListener("dblclick",()=>applySize(sizeDefault(),true));
+$("#sizeR").addEventListener("input",e=>applySize(+e.target.value,true));
+$("#sizeReset").onclick=()=>applySize(sizeDefault(),true);
+
+/* ---------- voice dictation ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+function initVoice(){ if(SR) $("#voiceRow").hidden=false; }
+$("#micBtn").onclick=async()=>{
+  if(!SR) return;
+  const mic=$("#micBtn");
+  if(rec){ try{ rec.stop(); }catch(e){} return; }
+  await lockTime();
+  const note=$("#note"), base=note.value.trim()?note.value.replace(/\s+$/,"")+" ":"";
+  const r=new SR(); rec=r;
+  r.lang=$("#voiceLang").value||navigator.language||"en-US"; r.interimResults=true; r.continuous=false;
+  r.onresult=e=>{ let t=""; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; note.value=base+t.trim(); };
+  r.onerror=e=>{
+    if(e.error==="no-speech") say("Heard nothing. Tap Speak and try again.",true);
+    else if(e.error==="not-allowed"||e.error==="service-not-allowed") say("Microphone is blocked. Allow it in the browser, or type instead.",true);
+    else if(e.error!=="aborted") say("Voice input failed. Type instead.",true); };
+  r.onend=()=>{ rec=null; mic.classList.remove("rec"); mic.textContent="Speak"; };
+  try{ r.start(); mic.classList.add("rec"); mic.textContent="Stop"; say("Listening..."); }catch(e){ rec=null; }
+};
+
+/* ---------- mobile: keyboard compact mode ---------- */
+const TYPE_SEL="input:not([type=radio]):not([type=file]):not([type=range]),textarea";
+const inForm=el=>el && el.closest && el.closest("#addCard,#sendCard") && el.matches(TYPE_SEL);
+document.addEventListener("focusin",e=>{ if(mq.matches && inForm(e.target)) document.body.classList.add("typing"); });
+document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(!inForm(document.activeElement)) document.body.classList.remove("typing"); },60); });
+
 /* ---------- start ---------- */
-renderThumbs(); updateCap();
+renderThumbs(); updateCap(); syncSel(); renderChips(); loadSize(); initVoice();
 const start = params.get("video")||CONFIG.defaultVideo;
 if(start) setVideo(start); else { syncFields(); render(); }
 </script>
