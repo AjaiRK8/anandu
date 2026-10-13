@@ -688,16 +688,17 @@ function addItem(resume){
   const endRaw = $("#timeEnd").value.trim();
   const t2 = endRaw ? parseT(endRaw) : null;
   const text = $("#note").value.trim();
-  if(t===null){ say("Enter a time like 1:25.",true); $("#time").focus(); return; }
-  if(endRaw && t2===null){ say("End time must look like 1:40, or leave it empty.",true); $("#timeEnd").focus(); return; }
-  if(t2!==null && t2<=t){ say("End time must be after the start time.",true); $("#timeEnd").focus(); return; }
-  if(!text){ say(pending.length?"You added an image but no description. Write what should change, then press Add to list.":"Write what should change.",true); $("#note").focus(); return; }
+  if(t===null){ say("Enter a time like 1:25.",true); $("#time").focus(); return false; }
+  if(endRaw && t2===null){ say("End time must look like 1:40, or leave it empty.",true); $("#timeEnd").focus(); return false; }
+  if(t2!==null && t2<=t){ say("End time must be after the start time.",true); $("#timeEnd").focus(); return false; }
+  if(!text){ say(pending.length?"You added an image but no description. Write what should change, then press Add to list.":"Write what should change.",true); $("#note").focus(); return false; }
   const newIt={id:Date.now()+Math.random(),t,t2,cat:document.querySelector('input[name=cat]:checked').value,
     pri:document.querySelector('input[name=pri]:checked').value,text,imgs:pending.slice(),done:false};
   state.items.push(newIt);
   $("#note").value=""; $("#timeEnd").value=""; resetSel(); dirty=false; pending=[]; renderThumbs(); save(); render(); showUndo(newIt);
   if(resume===true && api.canTime){ Promise.resolve(api.getTime()).then(c=>{ if(c!=null) api.seek(c); }).catch(()=>{}); }
   if(mq.matches && document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  return true;
 }
 function hideUndo(){ clearTimeout(undoTm); $("#undoToast").hidden=true; }
 function showUndo(it){ lastAdded=it; const u=$("#undoToast"); u.querySelector("span").textContent="Added."; u.hidden=false; clearTimeout(undoTm); undoTm=setTimeout(()=>{ u.hidden=true; },7000); }
@@ -757,7 +758,8 @@ function buildText(){
   if(state.general) s+=`Overall comments:\n${state.general}\n`;
   return s.trim();
 }
-function ready(){ if(pending.length && !$("#note").value.trim()){ say("An image is waiting without a description. Write what should change and press Add to list, or remove the image.",true); return false }
+function ready(){
+  if(pending.length || $("#note").value.trim()){ if(!addItem(false)) return false; hideUndo(); }
   if(!state.items.length && !state.general.trim()){ say("Add at least one change first.",true); return false } return true; }
 
 const hasImgs=()=>state.items.some(i=>i.imgs&&i.imgs.length);
