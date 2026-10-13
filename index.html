@@ -244,10 +244,8 @@ button{touch-action:manipulation}
 .tl.drag .tl-play::after{width:20px;height:20px;margin:-10px 0 0 -10px}
 @media (pointer:coarse){.tl{height:40px}.tl-play::after{width:18px;height:18px;margin:-9px 0 0 -9px}.tl.drag .tl-play::after{width:24px;height:24px;margin:-12px 0 0 -12px}}
 .addbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-@media (max-width:900px){
-  .addbar{position:sticky;bottom:0;z-index:4;flex-wrap:nowrap;margin:12px -20px -20px;padding:10px 20px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line)}
-  .addbar button{flex:1 1 0;min-width:0}
-}
+.addbar{position:sticky;bottom:0;z-index:4;flex-wrap:nowrap;margin:12px -20px -20px;padding:10px 20px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line)}
+.addbar button{flex:1 1 0;min-width:0}
 @media (max-width:600px){.addbar{margin:12px -14px -14px;padding-left:14px;padding-right:14px}}
 .undo-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;max-width:min(92vw,420px);
   background:var(--raised);border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:6px 8px 6px 14px;font-size:.9rem;box-shadow:0 6px 24px rgba(0,0,0,.5)}
