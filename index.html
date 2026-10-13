@@ -223,6 +223,10 @@ button{touch-action:manipulation}
 }
 #clearAll{margin-top:10px;color:var(--bad);border-color:var(--line-strong)}
 #clearAll:hover{background:rgba(255,123,112,.12);border-color:var(--bad);color:var(--bad)}
+.tl{touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.tl-play::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--panel)}
+.tl.drag .tl-play::after{width:20px;height:20px;margin:-10px 0 0 -10px}
+@media (pointer:coarse){.tl{height:40px}.tl-play::after{width:18px;height:18px;margin:-9px 0 0 -9px}.tl.drag .tl-play::after{width:24px;height:24px;margin:-12px 0 0 -12px}}
 </style>
 </head>
 <body>
@@ -606,15 +610,16 @@ async function setVideo(url){
 }
 
 /* ---------- time follow ---------- */
+let scrub=false, scrubT=0, scrubBusy=false;
 setInterval(async()=>{
-  if(!api.canTime) return;
+  if(!api.canTime || scrub) return;
   try{
     const t=await api.getTime();
     if(!dur){ const d=await api.getDur(); if(d>0){ dur=d; renderMarks(); } }
     if(dur>0 && t!=null) $("#tlPlay").style.left=Math.min(100,t/dur*100)+"%";
     if(!dirty && document.activeElement!==$("#note") && t!=null) $("#time").value=fmt(t);
   }catch(e){}
-},400);
+},150);
 $("#time").addEventListener("input",()=>{dirty=true});
 async function lockTime(){
   if(api.canTime && !dirty){ try{ const t=await api.getTime(); if(t!=null) $("#time").value=fmt(t); api.pause(); }catch(e){} }
@@ -1050,6 +1055,18 @@ document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(!inForm(document.
 $("#clearAll").onclick=()=>{ const n=state.items.length; if(!n) return;
   if(!confirm("Delete all "+n+" change"+(n>1?"s":"")+" from the list? This cannot be undone.")) return;
   state.items=[]; save(); render(); say("All changes cleared."); };
+
+/* ---------- drag the timeline to move playback ---------- */
+(function(){ const tl=$("#tl"), ph=$("#tlPlay"); let pid=null;
+  const tOf=e=>{ const r=tl.getBoundingClientRect(); return Math.max(0,Math.min(1,(e.clientX-r.left)/Math.max(1,r.width)))*dur; };
+  const move=e=>{ const t=tOf(e); scrubT=t; ph.style.left=(t/dur*100)+"%"; if(!dirty) $("#time").value=fmt(t);
+    if(!scrubBusy){ scrubBusy=true; try{ api.seekTo(t); }catch(x){} setTimeout(()=>{scrubBusy=false;},120); } };
+  tl.addEventListener("pointerdown",e=>{ if(!api.canTime||!(dur>0)) return; if(e.target.closest&&e.target.closest("button.mk")) return;
+    if(e.button!==undefined && e.button>0) return; scrub=true; pid=e.pointerId; try{tl.setPointerCapture(pid);}catch(x){} tl.classList.add("drag"); move(e); e.preventDefault(); });
+  tl.addEventListener("pointermove",e=>{ if(scrub && e.pointerId===pid) move(e); });
+  const end=e=>{ if(!scrub || e.pointerId!==pid) return; scrub=false; pid=null; tl.classList.remove("drag"); try{ api.seek(scrubT); }catch(x){} };
+  tl.addEventListener("pointerup",end); tl.addEventListener("pointercancel",end);
+})();
 
 /* ---------- start ---------- */
 renderThumbs(); updateCap(); syncSel(); renderChips(); loadSize(); initVoice();
