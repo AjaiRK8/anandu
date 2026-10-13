@@ -192,6 +192,12 @@ button{touch-action:manipulation}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:60;max-width:min(92vw,460px);
   background:var(--raised);border:1px solid var(--accent);color:var(--ink);border-radius:6px;padding:10px 14px;font-size:.9rem;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none}
 .toast.err{border-color:var(--bad)}
+.errbk{position:fixed;inset:0;z-index:100;background:rgba(5,6,7,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.errbk[hidden]{display:none}
+.errbox{background:var(--raised);border:1px solid var(--bad);border-radius:8px;padding:18px 20px;max-width:min(92vw,420px);width:100%;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.errbox h3{margin:0 0 8px;font-size:1rem;color:var(--bad)}
+.errbox p{margin:0 0 16px;font-size:.95rem;line-height:1.45;white-space:pre-line}
+.errbox .row{display:flex;justify-content:flex-end}
 @media (max-width:900px){
   body.typing #playerCard .pbar,body.typing #playerCard .popts,body.typing #playerCard .hint{display:none!important}
   body.typing .player{max-height:30vh}
@@ -422,6 +428,13 @@ button{touch-action:manipulation}
   </div>
 </div>
 
+<div class="errbk" id="errBk" hidden>
+  <div class="errbox" role="alertdialog" aria-modal="true" aria-labelledby="errTitle" aria-describedby="errMsg">
+    <h3 id="errTitle">Error</h3>
+    <p id="errMsg"></p>
+    <div class="row"><button type="button" class="primary" id="errOk">OK</button></div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="undo-toast" id="undoToast" role="status" hidden><span>Added.</span><button type="button" id="undoBtn">Undo</button></div>
 <script>
@@ -461,7 +474,17 @@ let toastTm;
 const say = (msg,err) => { const e=$("#status"); e.textContent=msg; e.className=err?"err":"";
   const t=$("#toast"); clearTimeout(toastTm);
   if(!msg){ t.hidden=true; return; }
-  t.textContent=msg; t.className="toast"+(err?" err":""); t.hidden=false; toastTm=setTimeout(()=>{ t.hidden=true; }, err?4200:2400); };
+  if(err){ t.hidden=true; showErr(msg); return; }
+  t.textContent=msg; t.className="toast"; t.hidden=false; toastTm=setTimeout(()=>{ t.hidden=true; }, 2400); };
+let errPrev=null;
+function showErr(msg){
+  const bk=$("#errBk"), m=$("#errMsg");
+  if(!bk.hidden){ if(!m.textContent.split("\n").includes(msg)) m.textContent+="\n"+msg; return; }
+  m.textContent=msg; bk.hidden=false;
+  setTimeout(()=>{ errPrev=document.activeElement; $("#errOk").focus(); },0); }
+function closeErr(){ $("#errBk").hidden=true; const p=errPrev; errPrev=null; if(p&&p.focus&&p!==document.body) try{p.focus()}catch(e){} }
+$("#errOk").onclick=closeErr;
+document.addEventListener("keydown",e=>{ if(!$("#errBk").hidden){ if(e.key==="Escape"||e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); closeErr(); } } },true);
 const key = () => "fb:"+(videoUrl||"none");
 const save = () => { try{localStorage.setItem(key(),JSON.stringify(state));return true}catch(e){ say("Browser storage is full. Images may be lost on refresh. Press Download PDF now.",true); return false} };
 const load = () => { try{const d=JSON.parse(localStorage.getItem(key())); if(d) return d}catch(e){} return null; };
@@ -668,7 +691,7 @@ function addItem(resume){
   if(t===null){ say("Enter a time like 1:25.",true); $("#time").focus(); return; }
   if(endRaw && t2===null){ say("End time must look like 1:40, or leave it empty.",true); $("#timeEnd").focus(); return; }
   if(t2!==null && t2<=t){ say("End time must be after the start time.",true); $("#timeEnd").focus(); return; }
-  if(!text){ say("Write what should change.",true); $("#note").focus(); return; }
+  if(!text){ say(pending.length?"You added an image but no description. Write what should change, then press Add to list.":"Write what should change.",true); $("#note").focus(); return; }
   const newIt={id:Date.now()+Math.random(),t,t2,cat:document.querySelector('input[name=cat]:checked').value,
     pri:document.querySelector('input[name=pri]:checked').value,text,imgs:pending.slice(),done:false};
   state.items.push(newIt);
@@ -734,7 +757,8 @@ function buildText(){
   if(state.general) s+=`Overall comments:\n${state.general}\n`;
   return s.trim();
 }
-function ready(){ if(!state.items.length && !state.general.trim()){ say("Add at least one change first.",true); return false } return true; }
+function ready(){ if(pending.length && !$("#note").value.trim()){ say("An image is waiting without a description. Write what should change and press Add to list, or remove the image.",true); return false }
+  if(!state.items.length && !state.general.trim()){ say("Add at least one change first.",true); return false } return true; }
 
 const hasImgs=()=>state.items.some(i=>i.imgs&&i.imgs.length);
 function saveReport(f){ const a=document.createElement("a"); a.href=URL.createObjectURL(f); a.download=f.name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
